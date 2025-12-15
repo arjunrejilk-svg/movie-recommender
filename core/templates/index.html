@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommender System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23e50914%22 font-family=%22Helvetica, Arial, sans-serif%22>M</text></svg>">
+
+    <style>
+        /* ================= EXISTING STYLES ================= */
+        body {
+            background-color: #141414;
+            color: white;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #e50914 !important;
+            font-size: 1.5rem;
+        }
+        .hero-section {
+            padding: 80px 0;
+            text-align: center;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://assets.nflxext.com/ffe/siteui/vlv3/f841d4c7-10e1-40af-bcae-07a3f8dc141a/f6d7434e-d6de-4185-a6d4-c77a2d08737b/US-en-20220502-popsignuptwoweeks-perspective_alpha_website_medium.jpg');
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 30px;
+        }
+        .movie-card {
+            background-color: #2f2f2f;
+            border: none;
+            transition: transform 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: block;
+            height: 100%;
+        }
+        .movie-card:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .card-img-top {
+            height: 300px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .card-body {
+            padding: 10px;
+        }
+        .form-control:focus {
+            background-color: #333;
+            color: white;
+            border-color: #e50914;
+            box-shadow: none;
+        }
+        input::-webkit-calendar-picker-indicator {
+            opacity: 100;
+            filter: invert(1); 
+        }
+
+        /* ================= NAVBAR STYLES ================= */
+        .navbar-user-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: 20px;
+        }
+        .user-name-display {
+            color: white;
+            font-weight: 800; 
+            font-size: 20px;
+            margin-right: 5px;
+            pointer-events: none;
+        }
+        .nav-action-btn {
+            display: inline-block;
+            color: white;
+            background-color: transparent;
+            border: 2px solid white;
+            padding: 6px 15px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-action-btn:hover {
+            background-color: #e50914;
+            border-color: #e50914;
+            color: white;
+        }
+        .search-wrapper {
+            position: relative;
+            width: 300px;
+        }
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            border-radius: 0 0 5px 5px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .suggestion-item {
+            padding: 10px;
+            color: black;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        #navbar-search-input {
+            border-radius: 4px;
+            background-color: rgba(0,0,0,0.5);
+            border: 1px solid #666;
+            color: white;
+        }
+        #navbar-search-input::placeholder {
+            color: #ccc;
+        }
+
+        /* ================= FOOTER STYLES ================= */
+        .custom-footer {
+            margin-top: auto; 
+            padding: 40px 0;
+            border-top: 1px solid #333;
+            background-color: #000;
+            text-align: center;
+        }
+
+        .footer-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent; 
+            border: 1px solid #e50914;     
+            color: #e50914;                
+            margin: 0 10px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn-about {
+            padding: 8px 20px;
+            border-radius: 30px;
+        }
+
+        .btn-social {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+        }
+
+        .footer-btn:hover {
+            background-color: #e50914;
+            color: white;
+            transform: translateY(-3px); 
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.5); 
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">MOVIE.AI</a>
+            
+            <div class="d-flex align-items-center">
+                <div class="search-wrapper me-3">
+                    <form action="{% url 'exact_search' %}" method="GET" style="margin: 0;">
+                        <input id="navbar-search-input" class="form-control" type="search" name="q" placeholder="Search your movie..." autocomplete="off">
+                    </form>
+                    <div id="suggestions-list" class="suggestions-box"></div>
+                </div>
+
+                <div class="navbar-user-section">
+                    {% if user.is_authenticated %}
+                        <span class="user-name-display">{{ user.username }}</span>
+                        <a href="{% url 'profile' %}" class="nav-action-btn">Dashboard</a>
+                        <form action="{% url 'logout' %}" method="post" style="display:inline; margin:0;">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-action-btn">Logout</button>
+                        </form>
+                    {% else %}
+                        <a href="/login" class="nav-action-btn">Login</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container hero-section rounded">
+        <h1 class="display-4 fw-bold mb-3">Unlimited Movies, AI Suggestions & More.</h1>
+        <p class="lead mb-4">Type a movie you like, OR tell us how you are feeling.</p>
+
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-8">
+                <form method="POST" class="d-flex gap-2" id="recommendation-form">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input list="movie_list" type="text" name="movie_name" class="form-control form-control-lg bg-dark text-white border-secondary" placeholder="Type a movie name OR how you feel (e.g., 'I am sad', 'Romantic')..." required autocomplete="off">
+                        <datalist id="movie_list">
+                            {% for movie in all_movies %}
+                                <option value="{{ movie }}">
+                            {% endfor %}
+                        </datalist>
+                        
+                        <button type="submit" id="submit-btn" class="btn btn-danger btn-lg">Get Recommendations</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        {% if selected_movie %}
+            <h2 class="mb-4">
+                {% if "Mood:" in selected_movie or "Results for:" in selected_movie %}
+                    {{ selected_movie }}
+                {% else %}
+                    Because you watched <span class="text-danger">{{ selected_movie }}</span>
+                {% endif %}
+            </h2>
+            <div class="row">
+                {% for movie in recommendations %}
+                <div class="col-6 col-md-3 col-lg-2 mb-4">
+                    <a href="{% url 'movie_detail' movie.id %}" class="card movie-card h-100">
+                        <img src="{{ movie.poster }}" class="card-img-top" alt="{{ movie.title }}">
+                        <div class="card-body">
+                            <h6 class="card-title text-center" style="font-size: 0.9rem;">{{ movie.title }}</h6>
+                        </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center">
+                    <p class="text-muted">No movies found. Try checking the spelling or typing a simple mood like "happy".</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <h3 class="mb-4 border-start border-4 border-danger ps-3">Trending Now</h3>
+            <div class="row">
+                {% for movie in trending_movies %}
+                <div class="col-6 col-md-3 col-lg-2 mb-4">
+                    <a href="{% url 'movie_detail' movie.id %}" class="card movie-card h-100">
+                        <img src="{{ movie.poster }}" class="card-img-top" alt="{{ movie.title }}">
+                        <div class="card-body">
+                            <h6 class="card-title text-center" style="font-size: 0.9rem;">{{ movie.title }}</h6>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <footer class="custom-footer">
+        <div class="container">
+            <div class="d-flex justify-content-center align-items-center flex-wrap">
+                
+                <a href="{% url 'about' %}" class="footer-btn btn-about">About Us</a>
+
+                <a href="https://www.instagram.com/accounts/login/" target="_blank" class="footer-btn btn-social">
+                    <i class="fab fa-instagram"></i>
+                </a>
+
+                <a href="https://www.facebook.com/login/" target="_blank" class="footer-btn btn-social">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+
+                <a href="https://twitter.com/i/flow/login" target="_blank" class="footer-btn btn-social">
+                    <i class="fa-brands fa-x-twitter"></i>
+                </a>
+
+                <a href="https://www.threads.net/login" target="_blank" class="footer-btn btn-social">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+
+            </div>
+            <p class="text-muted mt-3 small">© 2025 Movie.AI Project. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // --- 1. SEARCH LOGIC ---
+            const searchInput = document.getElementById('navbar-search-input');
+            const suggestionsList = document.getElementById('suggestions-list');
+
+            if (searchInput) {
+                searchInput.addEventListener('keyup', function() {
+                    const query = this.value.trim();
+                    if (query.length > 1) { 
+                        fetch(`/search-suggestions/?q=${query}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            suggestionsList.innerHTML = ''; 
+                            if (data.results.length > 0) {
+                                suggestionsList.style.display = 'block';
+                                data.results.forEach(movie => {
+                                    const div = document.createElement('div');
+                                    div.classList.add('suggestion-item');
+                                    div.textContent = movie.title;
+                                    div.onclick = function() { window.location.href = `/movie/${movie.id}/`; };
+                                    suggestionsList.appendChild(div);
+                                });
+                            } else {
+                                suggestionsList.style.display = 'none';
+                            }
+                        })
+                        .catch(err => { console.log("Error:", err); });
+                    } else {
+                        suggestionsList.style.display = 'none';
+                    }
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (e.target !== searchInput) {
+                        suggestionsList.style.display = 'none';
+                    }
+                });
+            }
+
+            // --- 2. FIXED ANIMATION LOGIC ---
+            // We now select by specific IDs so it never fails
+            const recForm = document.getElementById('recommendation-form');
+            const recBtn = document.getElementById('submit-btn');
+
+            if (recForm && recBtn) {
+                recForm.addEventListener('submit', function() {
+                    // Force the button to show the spinner
+                    recBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Let me cook...';
+                    // Optional: Disable it to prevent double clicks
+                    // recBtn.disabled = true; 
+                });
+            }
+        });
+    </script>
+</body>
+</html>

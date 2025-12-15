@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Movie.AI</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23e50914%22 font-family=%22Helvetica, Arial, sans-serif%22>M</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #141414;
+            color: white;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        .hero-text {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .tech-badge {
+            background-color: #333;
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-right: 10px;
+            border: 1px solid #e50914; /* Red Border */
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        h2 { color: #e50914; font-weight: bold; }
+        a { text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-danger fs-3" href="/">MOVIE.AI</a>
+            <a href="/" class="btn btn-outline-light">← Back to Home</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="hero-text">
+            <h1 class="display-3 fw-bold">Behind the <span class="text-danger">Magic</span></h1>
+            <p class="lead text-secondary">How we use Artificial Intelligence to find your next favorite movie.</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="glass-card">
+                    <h2>🧠 The Algorithm</h2>
+                    <p class="mt-3">
+                        This isn't just a database; it's a smart recommendation engine. We use a technique called 
+                        <strong>Content-Based Filtering</strong>.
+                    </p>
+                    <p>
+                        When you select a movie, our AI analyzes:
+                    </p>
+                    <ul>
+                        <li><span class="text-danger">Genres</span> (Action, Horror, etc.)</li>
+                        <li><span class="text-danger">Keywords</span> (Plot details, vibes)</li>
+                        <li><span class="text-danger">Cast & Crew</span> (Directors, Actors)</li>
+                    </ul>
+                    <p>
+                        It then calculates the "Cosine Similarity" (mathematical distance) between that movie and 5,000+ others to find the perfect matches.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="glass-card">
+                    <h2>💻 The Tech Stack</h2>
+                    <p class="mt-3">
+                        This project was built using modern web technologies and data science libraries.
+                    </p>
+                    <div class="mt-3">
+                        <span class="tech-badge">Python</span>
+                        <span class="tech-badge">Django Framework</span>
+                        <span class="tech-badge">Pandas (Data)</span>
+                        <span class="tech-badge">Scikit-Learn (AI)</span>
+                        <span class="tech-badge">Bootstrap 5</span>
+                        <span class="tech-badge">TMDB API</span>
+                    </div>
+                    <p class="mt-4 text-secondary">
+                        Developed with passion for cinema and code.<br>Developed by <a href="https://www.instagram.com/arjunrejil?igsh=YnppNTk4MXRoYnZ1" class="text-danger">Arjun Rejil</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5 mb-5">
+            <p class="text-muted">© 2025 Movie.AI Project. All Rights Reserved.</p>
+        </div>
+
+    </div>
+
+</body>
+</html>
