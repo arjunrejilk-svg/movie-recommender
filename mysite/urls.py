@@ -3,6 +3,9 @@ from django.urls import path
 from core import views
 
 urlpatterns = [
+    # --- FIX: Hijack Admin Logout (Must be first!) ---
+    path('admin/logout/', views.logout_view, name='admin_logout'),
+
     # Admin & Auth
     path('admin/login/', views.login_view),
     path('admin/', admin.site.urls),

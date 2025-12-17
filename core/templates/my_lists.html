@@ -10,6 +10,21 @@
         .movie-card { background-color: #2f2f2f; border: none; border-radius: 8px; transition: transform 0.3s; text-decoration: none; overflow: hidden; }
         .movie-card:hover { transform: scale(1.05); z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         .card-img-top { height: 300px; object-fit: cover; }
+        
+        /* --- NEW RED BUTTON STYLE --- */
+        .btn-custom-red {
+            background-color: #E50914; /* Your Brand Red */
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-custom-red:hover {
+            background-color: #b20710; /* Darker red on hover */
+            color: white;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -36,7 +51,7 @@
             {% empty %}
             <div class="col-12 text-center mt-5">
                 <h4 class="text-muted">It's empty here...</h4>
-                <a href="/" class="btn btn-primary mt-3">Go Find Movies</a>
+                <a href="/" class="btn btn-custom-red mt-3">Go Find Movies</a>
             </div>
             {% endfor %}
         </div>
