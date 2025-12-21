@@ -51,54 +51,50 @@
         #navbar-search-input { border-radius: 4px; background-color: rgba(0,0,0,0.5); border: 1px solid #666; color: white; }
         #navbar-search-input::placeholder { color: #ccc; }
 
-        /* ================= NEW: GOOGLE-STYLE TABS ================= */
+        /* ================= GOOGLE-STYLE TABS (Clean Text & Cut-off Fix) ================= */
         .category-scroll-container { 
             overflow-x: auto; 
             white-space: nowrap; 
-            padding: 15px 5px; 
+            padding: 0 20px 15px 10px; /* Padding keeps Tollywood safe */
             -ms-overflow-style: none; 
             scrollbar-width: none; 
-            margin-top: 10px; 
-            text-align: center; /* Center them like Google's main page */
+            margin-top: 20px; 
+            width: 100%;
+            text-align: left; 
         }
         .category-scroll-container::-webkit-scrollbar { display: none; }
         
-        .category-label { display: inline-block; margin: 0 6px; cursor: pointer; }
-        .category-input { display: none; } /* Hidden radio button */
+        .category-label { display: inline-block; margin: 0; cursor: pointer; }
+        .category-input { display: none; }
 
-        /* THE CHIP STYLE */
         .category-pill { 
-            padding: 10px 24px; 
-            border: 1px solid #444; 
-            border-radius: 50px; /* Fully rounded "Chip" style */
-            background-color: rgba(30, 30, 30, 0.9); 
-            color: #ccc; 
-            font-size: 0.95rem; 
+            padding: 10px 15px; 
+            color: #999; 
+            font-size: 1rem;
             font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth springy transition */
+            transition: all 0.3s ease;
             user-select: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* The Shadowing */
-            display: inline-flex;
-            align-items: center;
+            border: none; 
+            background: transparent; 
         }
 
-        /* HOVER STATE */
-        .category-pill:hover { 
-            background-color: #333; 
-            border-color: #666; 
-            color: white; 
-            transform: translateY(-2px); /* Slight lift */
-            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
-        }
+        .category-pill:hover { color: #ddd; }
 
-        /* SELECTED (ACTIVE) STATE - RED */
         .category-input:checked + .category-pill { 
-            background-color: #E50914; /* Movie.AI Red */
-            color: white; 
-            border-color: #E50914; 
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(229, 9, 20, 0.6); /* Red Glow */
-            transform: translateY(-1px);
+            color: #E50914; 
+            font-weight: bold; 
+            background: transparent;
+            border: none;
+        }
+
+        /* DISCLAIMER QUOTE STYLE */
+        .ai-disclaimer {
+            text-align: center;
+            color: #888; /* Soft Grey */
+            font-size: 0.95rem; /* Not too small, not too big */
+            margin-top: 60px;
+            font-style: italic;
+            opacity: 0.8;
         }
 
         /* FOOTER */
@@ -208,6 +204,10 @@
                 {% endfor %}
             </div>
         {% endif %}
+
+        <p class="ai-disclaimer">
+            "Even the best directors have a flop. Our AI might occasionally get the genre or language wrong."
+        </p>
     </div>
 
     <footer class="custom-footer">

@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 import requests
 from urllib.parse import quote
+import random
 
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
@@ -139,7 +140,7 @@ def search_suggestions(request):
         return JsonResponse({'results': [{'title': m.title, 'id': m.tmdb_id} for m in movies]})
     return JsonResponse({'results': []})
 
-# --- 6. UPGRADED HOME PAGE ---
+# --- 6. UPGRADED INTELLIGENT HOME PAGE ---
 
 
 @login_required(login_url='/login/')
@@ -164,15 +165,48 @@ def index(request):
     }
     target_data = lang_map.get(selected_category)
 
-    # 3. Mood Map
+    # 3. Enhanced AI Mood Map (The "Smart" Upgrade)
     mood_map = {
-        'sad': 'Drama', 'cry': 'Drama', 'depressed': 'Drama', 'upset': 'Drama',
-        'happy': 'Comedy', 'funny': 'Comedy', 'laugh': 'Comedy', 'joke': 'Comedy',
-        'romantic': 'Romance', 'love': 'Romance', 'date': 'Romance', 'crush': 'Romance',
-        'scary': 'Horror', 'fear': 'Horror', 'ghost': 'Horror', 'creepy': 'Horror',
-        'exciting': 'Action', 'adventure': 'Adventure', 'fight': 'Action', 'war': 'War',
-        'bored': 'Thriller', 'mystery': 'Mystery', 'suspense': 'Thriller',
-        'kids': 'Animation', 'cartoon': 'Animation', 'family': 'Family'
+        # Sadness -> Cheering up (Comedy) or Wallowing (Drama/Romance)
+        'sad': ['Comedy', 'Drama', 'Romance'],
+        'cry': ['Drama', 'Romance'],
+        'depressed': ['Comedy', 'Drama'],
+        'upset': ['Comedy', 'Family'],
+
+        # Happiness
+        'happy': ['Comedy', 'Animation', 'Adventure'],
+        'funny': ['Comedy'],
+        'laugh': ['Comedy'],
+        'joke': ['Comedy'],
+
+        # Relaxation
+        'relax': ['Romance', 'Comedy', 'Family', 'Animation'],
+        'chill': ['Romance', 'Comedy'],
+        'peace': ['Documentary', 'Drama'],
+
+        # Romance
+        'romantic': ['Romance'],
+        'love': ['Romance'],
+        'date': ['Romance', 'Comedy'],
+        'crush': ['Romance'],
+
+        # Tension / Anger -> Release (Action) or Thrill
+        'angry': ['Action', 'War', 'Thriller'],
+        'scary': ['Horror', 'Thriller'],
+        'fear': ['Horror'],
+        'creepy': ['Horror', 'Mystery'],
+        'bored': ['Thriller', 'Mystery', 'Action'],
+        'suspense': ['Thriller', 'Mystery'],
+
+        # Excitement
+        'exciting': ['Action', 'Adventure', 'Science Fiction'],
+        'adventure': ['Adventure'],
+        'fight': ['Action'],
+        'war': ['War', 'Action'],
+
+        # Kids
+        'kids': ['Animation', 'Family'],
+        'cartoon': ['Animation']
     }
 
     # Strict Language Check Helper
@@ -186,7 +220,7 @@ def index(request):
             if movie_lang == target_code:
                 return True
             if movie_lang != target_code:
-                return False  # Strict reject
+                return False
 
         row_tags = str(new_df.iloc[idx]['tags']).lower()
         for keyword in target_keywords:
@@ -194,22 +228,37 @@ def index(request):
                 return True
         return False
 
+    # Extract Genres Helper (For "Empty Tab" fix)
+    def get_genres_from_movie(idx):
+        # Tries to find genre keywords in the tags of a specific movie
+        tags = str(new_df.iloc[idx]['tags']).lower()
+        common_genres = ['action', 'adventure', 'animation', 'comedy', 'crime', 'documentary', 'drama', 'family',
+                         'fantasy', 'history', 'horror', 'music', 'mystery', 'romance', 'science fiction', 'thriller', 'war', 'western']
+        found_genres = [g for g in common_genres if g in tags]
+        return found_genres
+
     if request.method == 'POST':
         search_query = request.POST.get('movie_name', '').strip()
         user_input = search_query
 
-        # --- SEARCH LOGIC (Same as before, perfectly strict) ---
+        # ==========================================
+        # STRATEGY A: MOVIE TITLE SEARCH (The "Strict" Match)
+        # ==========================================
         if user_input in new_df['title'].values:
             selected_movie = f"Because you watched {user_input}"
             if selected_category != 'All':
                 selected_movie += f" ({selected_category})"
 
             movie_index = new_df[new_df['title'] == user_input].index[0]
+            input_genres = get_genres_from_movie(
+                movie_index)  # Remember genres for fallback
+
             distances = sorted(
                 list(enumerate(similarity[movie_index])), reverse=True, key=lambda x: x[1])
 
             count = 0
-            for i in distances[1:200]:
+            # Layer 1: Look Deep (500) for Exact Similarity + Language
+            for i in distances[1:500]:
                 if count >= 12:
                     break
                 idx = i[0]
@@ -220,23 +269,60 @@ def index(request):
                     recommendations.append(
                         {'title': movie_data.title, 'poster': poster, 'id': movie_data.id})
                     count += 1
-            if not recommendations:
-                selected_movie = f"No {selected_category} movies found similar to '{user_input}'"
 
+            # Layer 2 (Fallback): If no strict matches in this language, match GENRE in this language
+            if not recommendations and selected_category != 'All' and input_genres:
+                selected_movie = f"No exact matches, but here are {selected_category} {input_genres[0].capitalize()} movies:"
+
+                # Build regex for genre
+                genre_regex = '|'.join(input_genres)
+                condition = new_df['tags'].str.contains(
+                    genre_regex, case=False, na=False)
+
+                # Apply Language Filter
+                target_code, target_keywords = target_data
+                if 'original_language' in new_df.columns:
+                    condition = condition & (
+                        new_df['original_language'] == target_code)
+                else:
+                    condition = condition & new_df['tags'].str.contains(
+                        '|'.join(target_keywords), case=False, na=False)
+
+                fallback_movies = new_df[condition]
+                if not fallback_movies.empty:
+                    fallback_movies = fallback_movies.sample(
+                        n=min(12, len(fallback_movies)))
+                    for _, row in fallback_movies.iterrows():
+                        poster = safe_fetch_poster(
+                            int(row['id']), row['title'])
+                        recommendations.append(
+                            {'title': row['title'], 'poster': poster, 'id': row['id']})
+
+        # ==========================================
+        # STRATEGY B: MOOD / EMOTION SEARCH (The "Smart" Match)
+        # ==========================================
         elif user_input:
-            found_genre = None
+            found_genres = []
             input_lower = user_input.lower()
-            for mood, genre in mood_map.items():
+
+            # Check mood map
+            for mood, genres in mood_map.items():
                 if mood in input_lower:
-                    found_genre = genre
+                    found_genres = genres
                     break
 
-            if found_genre:
-                selected_movie = f"Mood: {found_genre}"
+            if found_genres:
+                genre_str = "/".join(found_genres[:2])
+                selected_movie = f"Mood: {genre_str}"
                 if selected_category != 'All':
                     selected_movie += f" ({selected_category})"
+
+                # Create regex: (Comedy|Drama|Romance)
+                genre_regex = '|'.join(found_genres)
                 condition = new_df['tags'].str.contains(
-                    found_genre, case=False, na=False)
+                    genre_regex, case=False, na=False)
+
+                # Strict Language Filter
                 if target_data:
                     target_code, target_keywords = target_data
                     if 'original_language' in new_df.columns:
@@ -255,9 +341,10 @@ def index(request):
                             int(row['id']), row['title'])
                         recommendations.append(
                             {'title': row['title'], 'poster': poster, 'id': row['id']})
-                if not recommendations:
-                    selected_movie = f"No {selected_category} {found_genre} movies found."
 
+            # ==========================================
+            # STRATEGY C: PLAIN TEXT SEARCH (Fallback)
+            # ==========================================
             else:
                 selected_movie = f"Results for: {user_input}"
                 condition = new_df['tags'].str.contains(
@@ -276,32 +363,47 @@ def index(request):
                     poster = safe_fetch_poster(int(row['id']), row['title'])
                     recommendations.append(
                         {'title': row['title'], 'poster': poster, 'id': row['id']})
-                if not recommendations:
-                    selected_movie = f"No {selected_category} movies found for '{user_input}'"
 
-    # --- SHOW MIXED TRENDING (New Logic) ---
+        # ==========================================
+        # LAYER 3: ULTIMATE FALLBACK (If still empty)
+        # ==========================================
+        # If user selected a category (e.g. Tollywood) but NOTHING was found above,
+        # just show POPULAR movies from that category so the screen isn't blank.
+        if not recommendations and selected_category != 'All':
+            selected_movie = f"No matches found, but check out these {selected_category} hits:"
+            target_code, target_keywords = target_data
+
+            if 'original_language' in new_df.columns:
+                fallback_df = new_df[new_df['original_language']
+                                     == target_code]
+            else:
+                fallback_df = new_df[new_df['tags'].str.contains(
+                    '|'.join(target_keywords), case=False, na=False)]
+
+            if not fallback_df.empty:
+                fallback_sample = fallback_df.sample(
+                    n=min(12, len(fallback_df)))
+                for _, row in fallback_sample.iterrows():
+                    poster = safe_fetch_poster(int(row['id']), row['title'])
+                    recommendations.append(
+                        {'title': row['title'], 'poster': poster, 'id': row['id']})
+
+    # --- SHOW MIXED TRENDING ---
     else:
         if new_df is not None:
-            # Create a Diverse Mix
             frames = []
             langs_to_mix = ['en', 'hi', 'ml', 'ta', 'te']
 
             if 'original_language' in new_df.columns:
-                # Try to take 3 from each language
                 for lang in langs_to_mix:
                     lang_group = new_df[new_df['original_language'] == lang]
                     if not lang_group.empty:
                         frames.append(lang_group.sample(
                             n=min(3, len(lang_group))))
-
-                # Fill the rest with random movies to reach 18
                 frames.append(new_df.sample(n=18))
-
-                # Combine, Shuffle, and Pick Top 18
                 mixed_df = pd.concat(
                     frames).drop_duplicates().sample(frac=1).head(18)
             else:
-                # Fallback if no language column
                 mixed_df = new_df.sample(n=18)
 
             for _, row in mixed_df.iterrows():
