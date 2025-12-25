@@ -118,3 +118,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Add this to the bottom of settings.py
+CSRF_TRUSTED_ORIGINS = [
+    'https://r-wauh.onrender.com',
+]
