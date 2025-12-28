@@ -3,137 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Movie.AI</title>
+    <title>Admin Control - Movie.AI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23e50914%22 font-family=%22Helvetica, Arial, sans-serif%22>M</text></svg>">
     
     <style>
-        body { background-color: #141414; color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        .navbar-brand { font-weight: bold; color: #e50914 !important; font-size: 1.5rem; }
+        body { background-color: #141414; color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; }
         
-        .stat-card { background-color: #2f2f2f; border-radius: 8px; padding: 20px; text-align: center; border-left: 5px solid #e50914; margin-bottom: 20px; }
-        .stat-number { font-size: 2.5rem; font-weight: bold; color: white; }
-        .stat-label { color: #aaa; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; }
-
-        .custom-table { background-color: #2f2f2f; color: white; border-radius: 8px; overflow: hidden; }
+        /* SIDEBAR STYLES */
+        .sidebar { height: 100vh; background-color: #000; border-right: 1px solid #333; position: fixed; width: 250px; padding-top: 20px; }
+        .sidebar-brand { color: #e50914; font-weight: bold; font-size: 1.8rem; text-align: center; margin-bottom: 30px; display: block; text-decoration: none; }
+        .nav-link { color: #aaa; padding: 15px 25px; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        .nav-link:hover { color: white; background-color: #222; }
+        .nav-link.active { color: white; background-color: #e50914; font-weight: bold; }
+        .badge-count { font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; }
+        
+        /* MAIN CONTENT STYLES */
+        .main-content { margin-left: 250px; padding: 30px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .search-input { background: #333; border: none; color: white; padding: 10px 15px; border-radius: 4px; width: 300px; }
+        .search-input:focus { background: #444; outline: 1px solid #e50914; color: white; }
+        
+        .custom-table { background-color: #2f2f2f; border-radius: 8px; overflow: hidden; }
         .table-dark { --bs-table-bg: #2f2f2f; --bs-table-border-color: #444; }
-        th { color: #e50914 !important; text-transform: uppercase; font-size: 0.85rem; }
-        td { vertical-align: middle; color: #ddd; }
+        th { color: #e50914 !important; text-transform: uppercase; font-size: 0.85rem; padding: 15px !important; }
+        td { vertical-align: middle; color: #ddd; padding: 12px 15px !important; }
         
-        .btn-action { padding: 5px 10px; font-size: 0.8rem; border-radius: 4px; }
-        .section-title { border-left: 4px solid #e50914; padding-left: 15px; margin-bottom: 20px; margin-top: 40px; }
+        .btn-action { padding: 4px 10px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-dark bg-transparent mb-4 border-bottom border-secondary pb-3">
-        <div class="container">
-            <a class="navbar-brand" href="/">MOVIE.AI <span style="color:white; font-size: 1rem; opacity: 0.7;">| ADMIN PANEL</span></a>
-            <div>
-                <a href="/admin/" target="_blank" class="btn btn-outline-light btn-sm me-2">
-                    <i class="fas fa-database me-2"></i>Backend DB
-                </a>
-                <a href="/" class="btn btn-danger btn-sm me-2">Visit Site</a>
-                <form action="{% url 'logout' %}" method="post" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-dark btn-sm border-secondary">Logout</button>
-                </form>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container">
+    <div class="sidebar">
+        <a href="/" class="sidebar-brand">MOVIE.AI</a>
         
-        <div class="row">
-            <div class="col-md-6">
-                <div class="stat-card">
-                    <div class="stat-number">{{ user_count }}</div>
-                    <div class="stat-label">Total Users</div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="stat-card">
-                    <div class="stat-number">{{ review_count }}</div>
-                    <div class="stat-label">Total Reviews</div>
-                </div>
-            </div>
+        <div class="nav flex-column">
+            <a href="?section=users" class="nav-link {% if section == 'users' %}active{% endif %}">
+                <span><i class="fas fa-users me-2"></i> Users</span>
+                <span class="badge-count">{{ count_users }}</span>
+            </a>
+            <a href="?section=movies" class="nav-link {% if section == 'movies' %}active{% endif %}">
+                <span><i class="fas fa-film me-2"></i> Movies (DB)</span>
+                <span class="badge-count">{{ count_movies }}</span>
+            </a>
+            <a href="?section=reviews" class="nav-link {% if section == 'reviews' %}active{% endif %}">
+                <span><i class="fas fa-star me-2"></i> Reviews</span>
+                <span class="badge-count">{{ count_reviews }}</span>
+            </a>
+            <a href="?section=watchlist" class="nav-link {% if section == 'watchlist' %}active{% endif %}">
+                <span><i class="fas fa-bookmark me-2"></i> Watchlists</span>
+                <span class="badge-count">{{ count_watchlist }}</span>
+            </a>
+            <a href="?section=favorites" class="nav-link {% if section == 'favorites' %}active{% endif %}">
+                <span><i class="fas fa-heart me-2"></i> Favorites</span>
+                <span class="badge-count">{{ count_favorites }}</span>
+            </a>
+            <a href="?section=votes" class="nav-link {% if section == 'votes' %}active{% endif %}">
+                <span><i class="fas fa-thumbs-up me-2"></i> Votes</span>
+                <span class="badge-count">{{ count_votes }}</span>
+            </a>
+            
+            <hr class="border-secondary mx-3">
+            
+            <a href="/admin/" target="_blank" class="nav-link">
+                <span><i class="fas fa-database me-2"></i> Backend DB</span>
+            </a>
+            <a href="/" class="nav-link">
+                <span><i class="fas fa-home me-2"></i> Visit Site</span>
+            </a>
+             <form action="{% url 'logout' %}" method="post" class="mt-auto">
+                {% csrf_token %}
+                <button type="submit" class="nav-link w-100 text-start border-0 bg-transparent text-danger">
+                    <span><i class="fas fa-sign-out-alt me-2"></i> Logout</span>
+                </button>
+            </form>
         </div>
-
-        <h3 class="section-title">Manage Users</h3>
-        <div class="table-responsive custom-table p-3">
-            <table class="table table-dark table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Date Joined</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    <tr>
-                        <td class="fw-bold">{{ u.username }}</td>
-                        <td>{{ u.email }}</td>
-                        <td>{{ u.date_joined|date:"M d, Y" }}</td>
-                        <td>
-                            {% if u.is_superuser %}
-                                <span class="badge bg-danger">Admin</span>
-                            {% else %}
-                                <span class="badge bg-secondary">User</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if not u.is_superuser %}
-                            <a href="{% url 'delete_user_admin' u.id %}" class="btn btn-danger btn-action" onclick="return confirm('Are you sure you want to delete this user?');">
-                                <i class="fas fa-trash"></i> Remove
-                            </a>
-                            {% else %}
-                            <span class="text-muted small">Cannot Delete</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <h3 class="section-title">Manage Content (Reviews)</h3>
-        <div class="table-responsive custom-table p-3 mb-5">
-            <table class="table table-dark table-hover mb-0">
-                <thead>
-                    <tr>
-                        <th>Movie</th>
-                        <th>User</th>
-                        <th>Rating</th>
-                        <th>Review</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for review in reviews %}
-                    <tr>
-                        <td class="fw-bold text-danger">{{ review.movie.title }}</td>
-                        <td>{{ review.user.username }}</td>
-                        <td><span class="text-warning fw-bold">{{ review.rating }}</span></td>
-                        <td>{{ review.text|truncatechars:50 }}</td>
-                        <td>
-                            <a href="{% url 'delete_review_admin' review.id %}" class="btn btn-outline-danger btn-action" onclick="return confirm('Delete this review?');">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center text-muted">No reviews yet.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="main-content">
+        
+        <div class="top-bar">
+            <h2 class="text-uppercase fw-bold mb-0">{{ section }}</h2>
+            <form method="GET" class="d-flex">
+                <input type="hidden" name="section" value="{{ section }}">
+                <input type="text" name="q" class="search-input" placeholder="Search {{ section }}..." value="{{ search_query }}">
+                <button type="submit" class="btn btn-danger ms-2"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+
+        <div class="table-responsive custom-table">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr>
+                        {% if section == 'users' %}
+                            <th>ID</th><th>Username</th><th>Email</th><th>Status</th><th>Joined</th><th>Action</th>
+                        {% elif section == 'movies' %}
+                            <th>ID</th><th>Title</th><th>Director</th><th>TMDB ID</th><th>Action</th>
+                        {% elif section == 'reviews' %}
+                            <th>User</th><th>Movie</th><th>Rating</th><th>Review</th><th>Date</th><th>Action</th>
+                        {% elif section == 'watchlist' %}
+                            <th>User</th><th>Movie</th><th>Added</th><th>Action</th>
+                        {% elif section == 'favorites' %}
+                            <th>User</th><th>Movie</th><th>Added</th><th>Action</th>
+                        {% elif section == 'votes' %}
+                            <th>User</th><th>Movie</th><th>Type</th><th>Action</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        {% if section == 'users' %}
+                            <td>{{ item.id }}</td>
+                            <td class="fw-bold">{{ item.username }}</td>
+                            <td>{{ item.email }}</td>
+                            <td>
+                                {% if item.is_superuser %}<span class="badge bg-danger">Admin</span>
+                                {% else %}<span class="badge bg-secondary">User</span>{% endif %}
+                            </td>
+                            <td>{{ item.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                {% if not item.is_superuser %}
+                                <a href="{% url 'delete_item_admin' 'users' item.id %}" class="btn btn-danger btn-action" onclick="return confirm('Delete User?');"><i class="fas fa-trash"></i></a>
+                                {% endif %}
+                            </td>
+
+                        {% elif section == 'movies' %}
+                            <td>{{ item.id }}</td>
+                            <td class="text-white fw-bold">{{ item.title }}</td>
+                            <td>{{ item.director }}</td>
+                            <td>{{ item.tmdb_id }}</td>
+                            <td>
+                                <a href="{% url 'delete_item_admin' 'movies' item.id %}" class="btn btn-danger btn-action" onclick="return confirm('Delete Movie Data?');"><i class="fas fa-trash"></i></a>
+                            </td>
+
+                        {% elif section == 'reviews' %}
+                            <td>{{ item.user.username }}</td>
+                            <td class="text-white">{{ item.movie.title }}</td>
+                            <td class="text-warning fw-bold">{{ item.rating }}</td>
+                            <td>{{ item.text|truncatechars:40 }}</td>
+                            <td>{{ item.created_at|date:"M d" }}</td>
+                            <td>
+                                <a href="{% url 'delete_item_admin' 'reviews' item.id %}" class="btn btn-danger btn-action" onclick="return confirm('Delete Review?');"><i class="fas fa-trash"></i></a>
+                            </td>
+                        
+                        {% elif section == 'watchlist' or section == 'favorites' %}
+                            <td>{{ item.user.username }}</td>
+                            <td class="text-white">{{ item.movie.title }}</td>
+                            <td>{{ item.id }}</td> <td>
+                                <a href="{% url 'delete_item_admin' section item.id %}" class="btn btn-danger btn-action" onclick="return confirm('Remove?');"><i class="fas fa-trash"></i></a>
+                            </td>
+
+                        {% elif section == 'votes' %}
+                            <td>{{ item.user.username }}</td>
+                            <td class="text-white">{{ item.movie.title }}</td>
+                            <td>
+                                {% if item.vote_type == 'LIKE' %}<span class="text-success"><i class="fas fa-thumbs-up"></i> Like</span>
+                                {% else %}<span class="text-danger"><i class="fas fa-thumbs-down"></i> Dislike</span>{% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'delete_item_admin' 'votes' item.id %}" class="btn btn-danger btn-action" onclick="return confirm('Remove Vote?');"><i class="fas fa-trash"></i></a>
+                            </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No data found in {{ section }}.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </body>
 </html>

@@ -1,6 +1,3 @@
-from django.contrib.auth.decorators import user_passes_test
-from django.contrib.auth.models import User
-from .models import Review
 import gzip
 import os
 import pickle
@@ -12,10 +9,11 @@ import random
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
+from django.contrib.auth.models import User
 
 # App Imports
 from .models import Movie, Watchlist, Favorite, Review, Vote
@@ -100,7 +98,7 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('/')
+            return redirect('index')
     else:
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
@@ -112,15 +110,14 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect('/admin/') if user.is_superuser else redirect('/')
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            else:
+                return redirect('login_dispatch')
     else:
         form = AuthenticationForm()
     return render(request, 'login.html', {'form': form})
-
-
-def logout_view(request):
-    logout(request)
-    return redirect('/login/')
 
 # --- 5. SEARCH & SUGGESTIONS ---
 
@@ -133,7 +130,7 @@ def exact_search(request):
         ) or Movie.objects.filter(title__icontains=query).first()
         if movie:
             return redirect('movie_detail', movie_id=movie.tmdb_id)
-    return redirect('/')
+    return redirect('index')
 
 
 def search_suggestions(request):
@@ -153,12 +150,9 @@ def index(request):
     search_query = ""
     recommendations = []
     trending_movies = []
-
-    # 1. Inputs
     selected_category = request.GET.get(
         'category') or request.POST.get('category', 'All')
 
-    # 2. Strict Language Map
     lang_map = {
         'Hollywood': ('en', ['english', 'usa', 'uk', 'hollywood']),
         'Bollywood': ('hi', ['hindi', 'india', 'bollywood']),
@@ -168,99 +162,71 @@ def index(request):
     }
     target_data = lang_map.get(selected_category)
 
-    # 3. Enhanced AI Mood Map (The "Smart" Upgrade)
     mood_map = {
-        # Sadness -> Cheering up (Comedy) or Wallowing (Drama/Romance)
         'sad': ['Comedy', 'Drama', 'Romance'],
         'cry': ['Drama', 'Romance'],
         'depressed': ['Comedy', 'Drama'],
         'upset': ['Comedy', 'Family'],
-
-        # Happiness
         'happy': ['Comedy', 'Animation', 'Adventure'],
         'funny': ['Comedy'],
         'laugh': ['Comedy'],
         'joke': ['Comedy'],
-
-        # Relaxation
         'relax': ['Romance', 'Comedy', 'Family', 'Animation'],
         'chill': ['Romance', 'Comedy'],
         'peace': ['Documentary', 'Drama'],
-
-        # Romance
         'romantic': ['Romance'],
         'love': ['Romance'],
         'date': ['Romance', 'Comedy'],
         'crush': ['Romance'],
-
-        # Tension / Anger -> Release (Action) or Thrill
         'angry': ['Action', 'War', 'Thriller'],
         'scary': ['Horror', 'Thriller'],
         'fear': ['Horror'],
         'creepy': ['Horror', 'Mystery'],
         'bored': ['Thriller', 'Mystery', 'Action'],
         'suspense': ['Thriller', 'Mystery'],
-
-        # Excitement
         'exciting': ['Action', 'Adventure', 'Science Fiction'],
         'adventure': ['Adventure'],
         'fight': ['Action'],
         'war': ['War', 'Action'],
-
-        # Kids
         'kids': ['Animation', 'Family'],
         'cartoon': ['Animation']
     }
 
-    # Strict Language Check Helper
     def check_language_strict(idx, target_data):
         if selected_category == 'All' or target_data is None:
             return True
         target_code, target_keywords = target_data
-
         if 'original_language' in new_df.columns:
             movie_lang = new_df.iloc[idx]['original_language']
             if movie_lang == target_code:
                 return True
             if movie_lang != target_code:
                 return False
-
         row_tags = str(new_df.iloc[idx]['tags']).lower()
         for keyword in target_keywords:
             if keyword in row_tags:
                 return True
         return False
 
-    # Extract Genres Helper (For "Empty Tab" fix)
     def get_genres_from_movie(idx):
-        # Tries to find genre keywords in the tags of a specific movie
         tags = str(new_df.iloc[idx]['tags']).lower()
         common_genres = ['action', 'adventure', 'animation', 'comedy', 'crime', 'documentary', 'drama', 'family',
                          'fantasy', 'history', 'horror', 'music', 'mystery', 'romance', 'science fiction', 'thriller', 'war', 'western']
-        found_genres = [g for g in common_genres if g in tags]
-        return found_genres
+        return [g for g in common_genres if g in tags]
 
     if request.method == 'POST':
         search_query = request.POST.get('movie_name', '').strip()
         user_input = search_query
 
-        # ==========================================
-        # STRATEGY A: MOVIE TITLE SEARCH (The "Strict" Match)
-        # ==========================================
         if user_input in new_df['title'].values:
             selected_movie = f"Because you watched {user_input}"
             if selected_category != 'All':
                 selected_movie += f" ({selected_category})"
-
             movie_index = new_df[new_df['title'] == user_input].index[0]
-            input_genres = get_genres_from_movie(
-                movie_index)  # Remember genres for fallback
-
+            input_genres = get_genres_from_movie(movie_index)
             distances = sorted(
                 list(enumerate(similarity[movie_index])), reverse=True, key=lambda x: x[1])
-
             count = 0
-            # Layer 1: Look Deep (500) for Exact Similarity + Language
             for i in distances[1:500]:
                 if count >= 12:
                     break
@@ -272,17 +238,11 @@ def index(request):
                     recommendations.append(
                         {'title': movie_data.title, 'poster': poster, 'id': movie_data.id})
                     count += 1
-
-            # Layer 2 (Fallback): If no strict matches in this language, match GENRE in this language
             if not recommendations and selected_category != 'All' and input_genres:
                 selected_movie = f"No exact matches, but here are {selected_category} {input_genres[0].capitalize()} movies:"
-
-                # Build regex for genre
                 genre_regex = '|'.join(input_genres)
                 condition = new_df['tags'].str.contains(
                     genre_regex, case=False, na=False)
-
-                # Apply Language Filter
                 target_code, target_keywords = target_data
                 if 'original_language' in new_df.columns:
                     condition = condition & (
@@ -290,7 +250,6 @@ def index(request):
                 else:
                     condition = condition & new_df['tags'].str.contains(
                         '|'.join(target_keywords), case=False, na=False)
-
                 fallback_movies = new_df[condition]
                 if not fallback_movies.empty:
                     fallback_movies = fallback_movies.sample(
@@ -301,31 +260,21 @@ def index(request):
                         recommendations.append(
                             {'title': row['title'], 'poster': poster, 'id': row['id']})
 
-        # ==========================================
-        # STRATEGY B: MOOD / EMOTION SEARCH (The "Smart" Match)
-        # ==========================================
         elif user_input:
             found_genres = []
             input_lower = user_input.lower()
-
-            # Check mood map
             for mood, genres in mood_map.items():
                 if mood in input_lower:
                     found_genres = genres
                     break
-
             if found_genres:
                 genre_str = "/".join(found_genres[:2])
                 selected_movie = f"Mood: {genre_str}"
                 if selected_category != 'All':
                     selected_movie += f" ({selected_category})"
-
-                # Create regex: (Comedy|Drama|Romance)
                 genre_regex = '|'.join(found_genres)
                 condition = new_df['tags'].str.contains(
                     genre_regex, case=False, na=False)
-
-                # Strict Language Filter
                 if target_data:
                     target_code, target_keywords = target_data
                     if 'original_language' in new_df.columns:
@@ -334,7 +283,6 @@ def index(request):
                     else:
                         condition = condition & new_df['tags'].str.contains(
                             '|'.join(target_keywords), case=False, na=False)
-
                 mood_movies = new_df[condition]
                 if not mood_movies.empty:
                     mood_movies = mood_movies.sample(
@@ -344,10 +292,6 @@ def index(request):
                             int(row['id']), row['title'])
                         recommendations.append(
                             {'title': row['title'], 'poster': poster, 'id': row['id']})
-
-            # ==========================================
-            # STRATEGY C: PLAIN TEXT SEARCH (Fallback)
-            # ==========================================
             else:
                 selected_movie = f"Results for: {user_input}"
                 condition = new_df['tags'].str.contains(
@@ -360,29 +304,21 @@ def index(request):
                     else:
                         condition = condition & new_df['tags'].str.contains(
                             '|'.join(target_keywords), case=False, na=False)
-
                 text_movies = new_df[condition].head(12)
                 for _, row in text_movies.iterrows():
                     poster = safe_fetch_poster(int(row['id']), row['title'])
                     recommendations.append(
                         {'title': row['title'], 'poster': poster, 'id': row['id']})
 
-        # ==========================================
-        # LAYER 3: ULTIMATE FALLBACK (If still empty)
-        # ==========================================
-        # If user selected a category (e.g. Tollywood) but NOTHING was found above,
-        # just show POPULAR movies from that category so the screen isn't blank.
         if not recommendations and selected_category != 'All':
             selected_movie = f"No matches found, but check out these {selected_category} hits:"
             target_code, target_keywords = target_data
-
             if 'original_language' in new_df.columns:
                 fallback_df = new_df[new_df['original_language']
                                      == target_code]
             else:
                 fallback_df = new_df[new_df['tags'].str.contains(
                     '|'.join(target_keywords), case=False, na=False)]
-
             if not fallback_df.empty:
                 fallback_sample = fallback_df.sample(
                     n=min(12, len(fallback_df)))
@@ -391,12 +327,10 @@ def index(request):
                     recommendations.append(
                         {'title': row['title'], 'poster': poster, 'id': row['id']})
 
-    # --- SHOW MIXED TRENDING ---
     else:
         if new_df is not None:
             frames = []
             langs_to_mix = ['en', 'hi', 'ml', 'ta', 'te']
-
             if 'original_language' in new_df.columns:
                 for lang in langs_to_mix:
                     lang_group = new_df[new_df['original_language'] == lang]
@@ -408,7 +342,6 @@ def index(request):
                     frames).drop_duplicates().sample(frac=1).head(18)
             else:
                 mixed_df = new_df.sample(n=18)
-
             for _, row in mixed_df.iterrows():
                 poster = safe_fetch_poster(int(row['id']), row['title'])
                 trending_movies.append(
@@ -424,14 +357,12 @@ def index(request):
         'user': request.user
     })
 
-# --- 7. MOVIE DETAIL PAGE (Updated: Passes 'genres' to template) ---
+# --- 7. MOVIE DETAIL PAGE ---
 
 
 @login_required
 def movie_detail(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
-
-    # Handle Review Submission
     if request.method == 'POST' and 'rating' in request.POST:
         text_content = request.POST.get('review_text', '')
         Review.objects.create(
@@ -441,40 +372,25 @@ def movie_detail(request, movie_id):
             text=text_content
         )
         return redirect('movie_detail', movie_id=movie_id)
-
-    # Get basic data
     poster, director, cast = get_movie_data(movie)
-
-    # --- LOGIC: EXTRACT GENRES & RELATED MOVIES ---
     related_movies = []
-    genre_str = ""  # New variable for the template
-
+    genre_str = ""
     try:
         if new_df is not None:
             movie_in_df = new_df[new_df['id'] == int(movie_id)]
-
             if not movie_in_df.empty:
-                # Get Genres
                 current_tags = str(movie_in_df.iloc[0]['tags']).lower()
                 common_genres = ['action', 'adventure', 'animation', 'comedy', 'crime', 'documentary', 'drama', 'family',
                                  'fantasy', 'history', 'horror', 'music', 'mystery', 'romance', 'science fiction', 'thriller', 'war', 'western']
                 found_genres = [g for g in common_genres if g in current_tags]
-
                 if found_genres:
-                    # 1. Create the Genre String for display (e.g. "Action | Sci-Fi")
                     genre_str = " | ".join([g.capitalize()
                                            for g in found_genres])
-
-                    # 2. Filter: Match Genre for Related Movies
                     genre_regex = '|'.join(found_genres)
                     condition = new_df['tags'].str.contains(
                         genre_regex, case=False, na=False)
-
-                    # Exclude current movie
                     related_df = new_df[condition & (
                         new_df['id'] != int(movie_id))]
-
-                    # Random Sample
                     if not related_df.empty:
                         samples = related_df.sample(n=min(6, len(related_df)))
                         for _, row in samples.iterrows():
@@ -484,13 +400,12 @@ def movie_detail(request, movie_id):
                                 {'title': row['title'], 'poster': p_url, 'id': row['id']})
     except Exception as e:
         print(f"Error finding related movies: {e}")
-
     return render(request, 'movie_detail.html', {
         'movie': movie,
         'poster': poster,
         'director': director,
         'cast': cast,
-        'genres': genre_str,  # <--- Passing the genres here
+        'genres': genre_str,
         'related_movies': related_movies,
         'in_watchlist': Watchlist.objects.filter(user=request.user, movie=movie).exists(),
         'in_favorites': Favorite.objects.filter(user=request.user, movie=movie).exists(),
@@ -506,8 +421,10 @@ def movie_detail(request, movie_id):
 @login_required
 def toggle_watchlist(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
-    Watchlist.objects.get(user=request.user, movie=movie).delete() if Watchlist.objects.filter(
-        user=request.user, movie=movie).exists() else Watchlist.objects.create(user=request.user, movie=movie)
+    if Watchlist.objects.filter(user=request.user, movie=movie).exists():
+        Watchlist.objects.get(user=request.user, movie=movie).delete()
+    else:
+        Watchlist.objects.create(user=request.user, movie=movie)
     get_movie_data(movie)
     return redirect('movie_detail', movie_id=movie_id)
 
@@ -515,8 +432,10 @@ def toggle_watchlist(request, movie_id):
 @login_required
 def toggle_favorite(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
-    Favorite.objects.get(user=request.user, movie=movie).delete() if Favorite.objects.filter(
-        user=request.user, movie=movie).exists() else Favorite.objects.create(user=request.user, movie=movie)
+    if Favorite.objects.filter(user=request.user, movie=movie).exists():
+        Favorite.objects.get(user=request.user, movie=movie).delete()
+    else:
+        Favorite.objects.create(user=request.user, movie=movie)
     get_movie_data(movie)
     return redirect('movie_detail', movie_id=movie_id)
 
@@ -551,8 +470,8 @@ def my_watchlist(request):
 
 
 @login_required
-def profile_view(request): return render(
-    request, 'profile.html', {'user': request.user})
+def profile_view(request):
+    return render(request, 'profile.html', {'user': request.user})
 
 
 @login_required
@@ -566,13 +485,18 @@ def my_lists(request, list_type):
     elif list_type == 'likes':
         items = Vote.objects.filter(user=request.user, vote_type='LIKE')
         page_title = "Movies I Liked"
-    return render(request, 'my_lists.html', {'movies': [{'id': item.movie.tmdb_id, 'title': item.movie.title, 'poster': safe_fetch_poster(item.movie.tmdb_id, item.movie.title)} for item in items], 'page_title': page_title})
+    return render(request, 'my_lists.html', {
+        'movies': [{'id': item.movie.tmdb_id, 'title': item.movie.title, 'poster': safe_fetch_poster(item.movie.tmdb_id, item.movie.title)} for item in items],
+        'page_title': page_title
+    })
 
 
 @login_required
 def my_reviews(request):
     reviews = Review.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'my_reviews.html', {'reviews': [{'id': r.id, 'movie_title': r.movie.title, 'rating': r.rating, 'text': r.text, 'date': r.created_at, 'poster': safe_fetch_poster(r.movie.tmdb_id, r.movie.title)} for r in reviews]})
+    return render(request, 'my_reviews.html', {
+        'reviews': [{'id': r.id, 'movie_title': r.movie.title, 'rating': r.rating, 'text': r.text, 'date': r.created_at, 'poster': safe_fetch_poster(r.movie.tmdb_id, r.movie.title)} for r in reviews]
+    })
 
 
 @login_required
@@ -588,42 +512,95 @@ def edit_review(request, review_id):
 # --- 11. ABOUT PAGE ---
 
 
-def about(request): return render(request, 'about.html')
-# --- 8. CUSTOM ADMIN DASHBOARD (Dark Mode) ---
+def about(request):
+    return render(request, 'about.html')
+
+# --- 12. CUSTOM ADMIN DASHBOARD (Full Control Center) ---
 
 
-@user_passes_test(lambda u: u.is_superuser)  # Security: Only Admin can enter
+@user_passes_test(lambda u: u.is_superuser)
 def custom_admin(request):
-    users = User.objects.all().order_by('-date_joined')
-    reviews = Review.objects.all().order_by('-created_at')
+    section = request.GET.get('section', 'users')
+    query = request.GET.get('q', '').strip()
+    data = []
+
+    if section == 'users':
+        data = User.objects.all().order_by('-date_joined')
+        if query:
+            data = data.filter(username__icontains=query)
+    elif section == 'movies':
+        data = Movie.objects.all().order_by('-id')
+        if query:
+            data = data.filter(title__icontains=query)
+    elif section == 'reviews':
+        data = Review.objects.select_related(
+            'user', 'movie').order_by('-created_at')
+        if query:
+            data = data.filter(text__icontains=query) | data.filter(
+                user__username__icontains=query)
+    elif section == 'watchlist':
+        data = Watchlist.objects.select_related(
+            'user', 'movie').order_by('-id')
+        if query:
+            data = data.filter(user__username__icontains=query) | data.filter(
+                movie__title__icontains=query)
+    elif section == 'favorites':
+        data = Favorite.objects.select_related('user', 'movie').order_by('-id')
+        if query:
+            data = data.filter(user__username__icontains=query) | data.filter(
+                movie__title__icontains=query)
+    elif section == 'votes':
+        data = Vote.objects.select_related('user', 'movie').order_by('-id')
+        if query:
+            data = data.filter(user__username__icontains=query) | data.filter(
+                movie__title__icontains=query)
 
     return render(request, 'custom_admin.html', {
-        'users': users,
-        'reviews': reviews,
-        'user_count': users.count(),
-        'review_count': reviews.count()
+        'section': section,
+        'data': data,
+        'search_query': query,
+        'count_users': User.objects.count(),
+        'count_movies': Movie.objects.count(),
+        'count_reviews': Review.objects.count(),
+        'count_watchlist': Watchlist.objects.count(),
+        'count_favorites': Favorite.objects.count(),
+        'count_votes': Vote.objects.count(),
     })
 
 
 @user_passes_test(lambda u: u.is_superuser)
-def delete_user_admin(request, user_id):
-    user_to_delete = get_object_or_404(User, id=user_id)
-    # Prevent deleting yourself!
-    if user_to_delete != request.user:
-        user_to_delete.delete()
-    return redirect('custom_admin')
+def delete_item_admin(request, model_type, item_id):
+    try:
+        if model_type == 'users':
+            obj = get_object_or_404(User, id=item_id)
+            if obj != request.user:
+                obj.delete()
+        elif model_type == 'movies':
+            get_object_or_404(Movie, id=item_id).delete()
+        elif model_type == 'reviews':
+            get_object_or_404(Review, id=item_id).delete()
+        elif model_type == 'watchlist':
+            get_object_or_404(Watchlist, id=item_id).delete()
+        elif model_type == 'favorites':
+            get_object_or_404(Favorite, id=item_id).delete()
+        elif model_type == 'votes':
+            get_object_or_404(Vote, id=item_id).delete()
+    except Exception as e:
+        print(f"Error deleting: {e}")
+    return redirect(f'/dashboard/?section={model_type}')
 
-
-@user_passes_test(lambda u: u.is_superuser)
-def delete_review_admin(request, review_id):
-    review = get_object_or_404(Review, id=review_id)
-    review.delete()
-    return redirect('custom_admin')
-# --- 9. LOGIN TRAFFIC CONTROLLER ---
+# --- 13. LOGIN TRAFFIC CONTROLLER ---
 
 
 @login_required
 def login_dispatch(request):
     if request.user.is_superuser:
-        return redirect('custom_admin')  # Admins go to Dashboard
-    return redirect('index')             # Normal Users go to Home
+        return redirect('custom_admin')
+    return redirect('index')
+
+# --- 14. LOGOUT FUNCTION ---
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
