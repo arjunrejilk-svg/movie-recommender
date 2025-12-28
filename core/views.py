@@ -1,3 +1,6 @@
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.models import User
+from .models import Review
 import gzip
 import os
 import pickle
@@ -586,3 +589,29 @@ def edit_review(request, review_id):
 
 
 def about(request): return render(request, 'about.html')
+# --- 8. CUSTOM ADMIN DASHBOARD (Dark Mode) ---
+@user_passes_test(lambda u: u.is_superuser) # Security: Only Admin can enter
+def custom_admin(request):
+    users = User.objects.all().order_by('-date_joined')
+    reviews = Review.objects.all().order_by('-created_at')
+    
+    return render(request, 'custom_admin.html', {
+        'users': users,
+        'reviews': reviews,
+        'user_count': users.count(),
+        'review_count': reviews.count()
+    })
+
+@user_passes_test(lambda u: u.is_superuser)
+def delete_user_admin(request, user_id):
+    user_to_delete = get_object_or_404(User, id=user_id)
+    # Prevent deleting yourself!
+    if user_to_delete != request.user:
+        user_to_delete.delete()
+    return redirect('custom_admin')
+
+@user_passes_test(lambda u: u.is_superuser)
+def delete_review_admin(request, review_id):
+    review = get_object_or_404(Review, id=review_id)
+    review.delete()
+    return redirect('custom_admin')

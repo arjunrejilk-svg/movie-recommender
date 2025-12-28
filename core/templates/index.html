@@ -33,16 +33,16 @@
         .movie-card { 
             background-color: #2f2f2f; 
             border: none; 
-            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added box-shadow transition */
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
             cursor: pointer; 
             text-decoration: none; 
             color: white; 
             display: block; 
             height: 100%; 
-            border-radius: 4px; /* Slight rounding */
+            border-radius: 4px; 
         }
         .movie-card:hover { 
-            transform: scale(1.05) translateY(-5px); /* Lift up slightly */
+            transform: scale(1.05) translateY(-5px); 
             z-index: 10; 
             box-shadow: 0 15px 30px rgba(0,0,0,0.8); /* DEEP BLACK SHADOW */
         }
@@ -151,6 +151,11 @@
                 </div>
                 <div class="navbar-user-section">
                     {% if user.is_authenticated %}
+                        
+                        {% if user.is_superuser %}
+                            <a href="{% url 'custom_admin' %}" class="nav-action-btn" style="border-color: #e50914; color: #e50914; margin-right: 5px;">Admin Panel</a>
+                        {% endif %}
+
                         <span class="user-name-display">{{ user.username }}</span>
                         <a href="{% url 'profile' %}" class="nav-action-btn">Dashboard</a>
                         <form action="{% url 'logout' %}" method="post" style="display:inline; margin:0;">

@@ -33,4 +33,10 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('my-lists/<str:list_type>/', views.my_lists, name='my_lists'),
     path('my-reviews/', views.my_reviews, name='my_reviews'),
+    # Admin Panel Paths
+    path('dashboard/', views.custom_admin, name='custom_admin'),
+    path('dashboard/delete-user/<int:user_id>/',
+         views.delete_user_admin, name='delete_user_admin'),
+    path('dashboard/delete-review/<int:review_id>/',
+         views.delete_review_admin, name='delete_review_admin'),
 ]
