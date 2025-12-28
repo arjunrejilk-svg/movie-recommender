@@ -29,15 +29,32 @@
             margin-bottom: 30px; 
         }
 
-        .movie-card { background-color: #2f2f2f; border: none; transition: transform 0.3s; cursor: pointer; text-decoration: none; color: white; display: block; height: 100%; }
-        .movie-card:hover { transform: scale(1.05); z-index: 10; }
-        .card-img-top { height: 300px; object-fit: cover; border-radius: 4px; }
+        /* --- NEW: 3D SHADOW EFFECT FOR CARDS --- */
+        .movie-card { 
+            background-color: #2f2f2f; 
+            border: none; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Added box-shadow transition */
+            cursor: pointer; 
+            text-decoration: none; 
+            color: white; 
+            display: block; 
+            height: 100%; 
+            border-radius: 4px; /* Slight rounding */
+        }
+        .movie-card:hover { 
+            transform: scale(1.05) translateY(-5px); /* Lift up slightly */
+            z-index: 10; 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8); /* DEEP BLACK SHADOW */
+        }
+        
+        .card-img-top { height: 300px; object-fit: cover; border-radius: 4px 4px 0 0; }
         .card-body { padding: 10px; }
         
         /* FORM INPUT STYLES */
         .form-control:focus { background-color: #333; color: white; border-color: #e50914; box-shadow: none; }
         input::-webkit-calendar-picker-indicator { opacity: 100; filter: invert(1); }
-      /* RED SEARCH 'X' MARK */
+
+        /* RED SEARCH 'X' MARK (Kept Safe) */
         input[type="search"]::-webkit-search-cancel-button {
             -webkit-appearance: none;
             height: 16px;
@@ -45,11 +62,22 @@
             background: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e50914' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3e%3cline x1='18' y1='6' x2='6' y2='18'%3e%3c/line%3e%3cline x1='6' y1='6' x2='18' y2='18'%3e%3c/line%3e%3c/svg%3e") no-repeat center center;
             cursor: pointer;
         }
+
+        /* --- NEW: GLOWING BUTTONS --- */
+        .btn-danger {
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover {
+            background-color: #ff0f1f; /* Brighter Red */
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.6); /* RED GLOW */
+            transform: translateY(-2px);
+        }
+
         /* NAVBAR & SEARCH */
         .navbar-user-section { display: flex; align-items: center; gap: 15px; margin-left: 20px; }
         .user-name-display { color: white; font-weight: 800; font-size: 20px; margin-right: 5px; pointer-events: none; }
         .nav-action-btn { display: inline-block; color: white; background-color: transparent; border: 2px solid white; padding: 6px 15px; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 4px; transition: all 0.3s ease; cursor: pointer; }
-        .nav-action-btn:hover { background-color: #e50914; border-color: #e50914; color: white; }
+        .nav-action-btn:hover { background-color: #e50914; border-color: #e50914; color: white; box-shadow: 0 0 15px rgba(229, 9, 20, 0.5); /* Glow on Hover */ }
         
         .search-wrapper { position: relative; width: 300px; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background-color: white; border-radius: 0 0 5px 5px; z-index: 1000; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -58,11 +86,11 @@
         #navbar-search-input { border-radius: 4px; background-color: rgba(0,0,0,0.5); border: 1px solid #666; color: white; }
         #navbar-search-input::placeholder { color: #ccc; }
 
-        /* ================= GOOGLE-STYLE TABS (Clean Text & Cut-off Fix) ================= */
+        /* GOOGLE-STYLE TABS */
         .category-scroll-container { 
             overflow-x: auto; 
             white-space: nowrap; 
-            padding: 0 20px 15px 10px; /* Padding keeps Tollywood safe */
+            padding: 0 20px 15px 10px; 
             -ms-overflow-style: none; 
             scrollbar-width: none; 
             margin-top: 20px; 
@@ -70,10 +98,8 @@
             text-align: left; 
         }
         .category-scroll-container::-webkit-scrollbar { display: none; }
-        
         .category-label { display: inline-block; margin: 0; cursor: pointer; }
         .category-input { display: none; }
-
         .category-pill { 
             padding: 10px 15px; 
             color: #999; 
@@ -84,21 +110,20 @@
             border: none; 
             background: transparent; 
         }
-
         .category-pill:hover { color: #ddd; }
-
         .category-input:checked + .category-pill { 
             color: #E50914; 
             font-weight: bold; 
             background: transparent;
             border: none;
+            text-shadow: 0 0 10px rgba(229, 9, 20, 0.4); /* Subtle Glow for Active Tab */
         }
 
-        /* DISCLAIMER QUOTE STYLE */
+        /* DISCLAIMER */
         .ai-disclaimer {
             text-align: center;
-            color: #888; /* Soft Grey */
-            font-size: 0.95rem; /* Not too small, not too big */
+            color: #888; 
+            font-size: 0.95rem; 
             margin-top: 60px;
             font-style: italic;
             opacity: 0.8;
@@ -109,7 +134,7 @@
         .footer-btn { display: inline-flex; align-items: center; justify-content: center; background-color: transparent; border: 1px solid #e50914; color: #e50914; margin: 0 10px; text-decoration: none; transition: all 0.3s ease; font-weight: bold; }
         .btn-about { padding: 8px 20px; border-radius: 30px; }
         .btn-social { width: 40px; height: 40px; border-radius: 50%; font-size: 18px; }
-        .footer-btn:hover { background-color: #e50914; color: white; transform: translateY(-3px); box-shadow: 0 0 10px rgba(229, 9, 20, 0.5); }
+        .footer-btn:hover { background-color: #e50914; color: white; transform: translateY(-3px); box-shadow: 0 0 15px rgba(229, 9, 20, 0.6); /* Enhanced Glow */ }
     </style>
 </head>
 <body>

@@ -31,11 +31,35 @@
         .review-date { color: #777; font-size: 0.8rem; }
         .rating-badge { background-color: #333; padding: 2px 8px; border-radius: 4px; font-weight: bold; color: #ffc107; font-size: 0.9rem; }
         
-        /* RELATED MOVIES CARD STYLE */
-        .movie-card { background-color: #2f2f2f; border: none; transition: transform 0.3s; cursor: pointer; text-decoration: none; color: white; display: block; height: 100%; }
-        .movie-card:hover { transform: scale(1.05); z-index: 10; }
-        .card-img-top { height: 250px; object-fit: cover; border-radius: 4px; }
+        /* --- NEW: 3D SHADOW EFFECT FOR CARDS (Related Movies) --- */
+        .movie-card { 
+            background-color: #2f2f2f; 
+            border: none; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+            cursor: pointer; 
+            text-decoration: none; 
+            color: white; 
+            display: block; 
+            height: 100%; 
+            border-radius: 4px;
+        }
+        .movie-card:hover { 
+            transform: scale(1.05) translateY(-5px); 
+            z-index: 10; 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8); /* DEEP BLACK SHADOW */
+        }
+        .card-img-top { height: 250px; object-fit: cover; border-radius: 4px 4px 0 0; }
         .card-body { padding: 10px; }
+
+        /* --- NEW: GLOWING TRAILER BUTTON --- */
+        .btn-danger {
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover {
+            background-color: #ff0f1f;
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.6); /* RED GLOW */
+            transform: translateY(-2px);
+        }
 
         .form-control { background-color: #333; border: 1px solid #555; color: white; }
         .form-control:focus { background-color: #333; color: white; border-color: #e50914; box-shadow: none; }
@@ -74,10 +98,10 @@
                 </p>
 
                 <div class="d-flex align-items-center mb-4 mt-4">
-                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Add to Watchlist">
+                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Watchlist">
                         <i class="fas fa-plus"></i>
                     </a>
-                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Add to Favorites">
+                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Favorites">
                         <i class="fas fa-heart"></i>
                     </a>
                     <a href="{% url 'toggle_vote' movie.tmdb_id 'LIKE' %}" class="btn-icon {% if current_vote == 'LIKE' %}active-like{% endif %}" title="Like">
