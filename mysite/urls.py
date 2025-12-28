@@ -18,7 +18,7 @@ urlpatterns = [
          name='search_suggestions'),
     path('about/', views.about, name='about'),
     # Core App
-    path('', views.index, name='home'),
+    path('', views.index, name='index'),
     path('movie/<int:movie_id>/', views.movie_detail, name='movie_detail'),
 
     # Actions
@@ -39,4 +39,6 @@ urlpatterns = [
          views.delete_user_admin, name='delete_user_admin'),
     path('dashboard/delete-review/<int:review_id>/',
          views.delete_review_admin, name='delete_review_admin'),
+    # Add this path for the login redirect
+    path('login-redirect/', views.login_dispatch, name='login_dispatch'),
 ]

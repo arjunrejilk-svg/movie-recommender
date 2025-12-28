@@ -118,7 +118,13 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# Add this to the bottom of settings.py
+
+# CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
     'https://r-wauh.onrender.com',
 ]
+
+# --- NEW: LOGIN REDIRECT SETTINGS ---
+# This tells Django: "When someone logs in, send them to our traffic controller"
+LOGIN_REDIRECT_URL = 'login_dispatch'
+LOGIN_URL = 'login'

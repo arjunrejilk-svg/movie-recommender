@@ -590,17 +590,20 @@ def edit_review(request, review_id):
 
 def about(request): return render(request, 'about.html')
 # --- 8. CUSTOM ADMIN DASHBOARD (Dark Mode) ---
-@user_passes_test(lambda u: u.is_superuser) # Security: Only Admin can enter
+
+
+@user_passes_test(lambda u: u.is_superuser)  # Security: Only Admin can enter
 def custom_admin(request):
     users = User.objects.all().order_by('-date_joined')
     reviews = Review.objects.all().order_by('-created_at')
-    
+
     return render(request, 'custom_admin.html', {
         'users': users,
         'reviews': reviews,
         'user_count': users.count(),
         'review_count': reviews.count()
     })
+
 
 @user_passes_test(lambda u: u.is_superuser)
 def delete_user_admin(request, user_id):
@@ -610,8 +613,17 @@ def delete_user_admin(request, user_id):
         user_to_delete.delete()
     return redirect('custom_admin')
 
+
 @user_passes_test(lambda u: u.is_superuser)
 def delete_review_admin(request, review_id):
     review = get_object_or_404(Review, id=review_id)
     review.delete()
     return redirect('custom_admin')
+# --- 9. LOGIN TRAFFIC CONTROLLER ---
+
+
+@login_required
+def login_dispatch(request):
+    if request.user.is_superuser:
+        return redirect('custom_admin')  # Admins go to Dashboard
+    return redirect('index')             # Normal Users go to Home
