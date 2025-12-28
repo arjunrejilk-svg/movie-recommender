@@ -98,10 +98,10 @@
                 </p>
 
                 <div class="d-flex align-items-center mb-4 mt-4">
-                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Watchlist">
+                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Add to Watchlist">
                         <i class="fas fa-plus"></i>
                     </a>
-                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Favorites">
+                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Add to Favorites">
                         <i class="fas fa-heart"></i>
                     </a>
                     <a href="{% url 'toggle_vote' movie.tmdb_id 'LIKE' %}" class="btn-icon {% if current_vote == 'LIKE' %}active-like{% endif %}" title="Like">
