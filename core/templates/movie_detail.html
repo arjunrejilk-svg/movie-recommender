@@ -59,7 +59,8 @@
             
             <div class="col-md-8">
                 <h1 class="display-4 fw-bold mb-2">{{ movie.title }}</h1>
-                <p class="text-muted mb-3">Directed by {{ director }}</p>
+                
+                <p class="mb-3" style="color: #cccccc; font-size: 1.1rem;">Directed by {{ director }}</p>
                 
                 <p class="lead" style="font-size: 1.1rem; line-height: 1.6; color: #ddd;">
                     {{ movie.overview|default:"No description available." }}
@@ -92,10 +93,10 @@
                     {% csrf_token %}
                     <div class="row g-2">
                         <div class="col-md-2">
-                            <input type="number" name="rating" step="0.1" min="0" max="10" class="form-control text-center fw-bold" placeholder="8.5" required>
+                            <input type="number" name="rating" step="0.1" min="0" max="10" class="form-control text-center fw-bold" required>
                         </div>
                         <div class="col-md-8">
-                            <input type="text" name="review_text" class="form-control" placeholder="Review (Optional)..." autocomplete="off">
+                            <input type="text" name="review_text" class="form-control" placeholder="Write a review..." autocomplete="off">
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-outline-danger w-100">Submit</button>
