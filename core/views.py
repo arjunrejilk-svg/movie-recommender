@@ -421,55 +421,52 @@ def index(request):
         'user': request.user
     })
 
-# --- 7. MOVIE DETAIL PAGE (Updated with Related Movies) ---
+# --- 7. MOVIE DETAIL PAGE (Fixed: Rating, Optional Text, Mixed Recommendations) ---
 
 
 @login_required
 def movie_detail(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
 
-    # Handle Review Submission
+    # Handle Review Submission (Fixed: Text is optional)
     if request.method == 'POST' and 'rating' in request.POST:
+        # Defaults to empty if nothing typed
+        text_content = request.POST.get('review_text', '')
         Review.objects.create(
             user=request.user,
             movie=movie,
             rating=float(request.POST['rating']),
-            text=request.POST['review_text']
+            text=text_content
         )
         return redirect('movie_detail', movie_id=movie_id)
 
     # Get basic data
     poster, director, cast = get_movie_data(movie)
 
-    # --- LOGIC: RELATED MOVIES (Mixed Language & Same Genre) ---
+    # --- LOGIC: RELATED MOVIES (Genre-Based, Mixed Languages) ---
     related_movies = []
     try:
-        # 1. Find the current movie in our Dataframe
         if new_df is not None:
-            # Try to match by ID first, then title
             movie_in_df = new_df[new_df['id'] == int(movie_id)]
 
             if not movie_in_df.empty:
-                # 2. Extract Genres (tags)
+                # Get Genres
                 current_tags = str(movie_in_df.iloc[0]['tags']).lower()
                 common_genres = ['action', 'adventure', 'animation', 'comedy', 'crime', 'documentary', 'drama', 'family',
                                  'fantasy', 'history', 'horror', 'music', 'mystery', 'romance', 'science fiction', 'thriller', 'war', 'western']
-
-                # Find which genres this movie has
                 found_genres = [g for g in common_genres if g in current_tags]
 
                 if found_genres:
-                    # 3. Filter for ANY movie with the same genres
+                    # Filter: Match Genre (ANY Language allowed)
                     genre_regex = '|'.join(found_genres)
                     condition = new_df['tags'].str.contains(
                         genre_regex, case=False, na=False)
 
-                    # Exclude the current movie itself
+                    # Exclude current movie
                     related_df = new_df[condition & (
                         new_df['id'] != int(movie_id))]
 
-                    # 4. RANDOM SAMPLE (This ensures the "Mix of Languages")
-                    # We don't sort by similarity here, we Shuffle to get diversity.
+                    # Random Sample (Mixes Hollywood, Bollywood, etc.)
                     if not related_df.empty:
                         samples = related_df.sample(n=min(6, len(related_df)))
                         for _, row in samples.iterrows():
@@ -485,7 +482,7 @@ def movie_detail(request, movie_id):
         'poster': poster,
         'director': director,
         'cast': cast,
-        'related_movies': related_movies,  # <--- Passing the new list here
+        'related_movies': related_movies,
         'in_watchlist': Watchlist.objects.filter(user=request.user, movie=movie).exists(),
         'in_favorites': Favorite.objects.filter(user=request.user, movie=movie).exists(),
         'reviews': Review.objects.filter(movie=movie).order_by('-created_at'),
