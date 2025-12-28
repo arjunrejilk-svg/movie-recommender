@@ -37,7 +37,14 @@
         /* FORM INPUT STYLES */
         .form-control:focus { background-color: #333; color: white; border-color: #e50914; box-shadow: none; }
         input::-webkit-calendar-picker-indicator { opacity: 100; filter: invert(1); }
-
+      /* RED SEARCH 'X' MARK */
+        input[type="search"]::-webkit-search-cancel-button {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e50914' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3e%3cline x1='18' y1='6' x2='6' y2='18'%3e%3c/line%3e%3cline x1='6' y1='6' x2='18' y2='18'%3e%3c/line%3e%3c/svg%3e") no-repeat center center;
+            cursor: pointer;
+        }
         /* NAVBAR & SEARCH */
         .navbar-user-section { display: flex; align-items: center; gap: 15px; margin-left: 20px; }
         .user-name-display { color: white; font-weight: 800; font-size: 20px; margin-right: 5px; pointer-events: none; }
