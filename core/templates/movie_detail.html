@@ -3,107 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ movie.title }} - Details</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23e50914%22 font-family=%22Helvetica, Arial, sans-serif%22>M</text></svg>">
+    <title>{{ movie.title }} - Movie.AI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-weight=%22bold%22 fill=%22%23e50914%22 font-family=%22Helvetica, Arial, sans-serif%22>M</text></svg>">
     <style>
-        /* --- KEEPING YOUR EXISTING STYLES --- */
         body { background-color: #141414; color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        .movie-header { background: linear-gradient(rgba(0,0,0,0.7), #141414), url('{{ poster }}'); background-size: cover; background-position: center; padding: 50px 0; margin-bottom: 30px; }
-        .poster-img { border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); width: 100%; }
-        .btn-action { width: 100%; margin-bottom: 10px; font-weight: bold; }
-        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 20px; margin-top: 20px; }
-        .review-card { border-bottom: 1px solid #333; padding: 15px 0; }
-        a { text-decoration: none; color: white; }
+        .navbar-brand { font-weight: bold; color: #e50914 !important; font-size: 1.5rem; }
+        .btn-icon { background: transparent; border: 2px solid #666; color: white; border-radius: 50%; width: 45px; height: 45px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s; margin-right: 10px; text-decoration: none; }
+        .btn-icon:hover { border-color: white; transform: scale(1.1); color: white; }
+        .btn-icon.active-watch { border-color: #e50914; color: #e50914; }
+        .btn-icon.active-fav { border-color: #ffc107; color: #ffc107; }
+        .btn-icon.active-like { border-color: #28a745; color: #28a745; }
+        .btn-icon.active-dislike { border-color: #dc3545; color: #dc3545; }
+        
+        .movie-poster-lg { border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); width: 100%; object-fit: cover; }
+        .cast-text { color: #aaa; font-size: 0.9rem; }
+        .meta-label { color: #777; font-weight: bold; font-size: 0.9rem; margin-right: 5px; }
+        
+        /* REVIEWS */
+        .review-box { background-color: #2f2f2f; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .review-user { font-weight: bold; color: #e50914; margin-right: 10px; }
+        .review-date { color: #777; font-size: 0.8rem; }
+        .star-rating { color: #ffc107; }
+        
+        /* RELATED MOVIES CARD STYLE */
+        .movie-card { background-color: #2f2f2f; border: none; transition: transform 0.3s; cursor: pointer; text-decoration: none; color: white; display: block; height: 100%; }
+        .movie-card:hover { transform: scale(1.05); z-index: 10; }
+        .card-img-top { height: 250px; object-fit: cover; border-radius: 4px; }
+        .card-body { padding: 10px; }
 
-        /* --- NEW FIX: FORCES INPUT GLOW TO BE RED INSTEAD OF BLUE --- */
-        .form-control:focus {
-            border-color: #e50914; /* Red Border */
-            box-shadow: 0 0 0 0.25rem rgba(229, 9, 20, 0.25); /* Red Glow */
-        }
+        .form-control, .form-select { background-color: #333; border: 1px solid #555; color: white; }
+        .form-control:focus, .form-select:focus { background-color: #333; color: white; border-color: #e50914; box-shadow: none; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-dark bg-transparent mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold text-danger fs-3" href="/">MOVIE.AI</a>
-            <a href="/" class="btn btn-outline-light btn-sm">← Back to Home</a>
+            <a class="navbar-brand" href="/">MOVIE.AI</a>
+            <a href="/" class="btn btn-outline-light btn-sm">Back to Home</a>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container mt-4">
         <div class="row">
-            <div class="col-md-4">
-                <img src="{{ poster }}" class="poster-img" alt="{{ movie.title }}">
-                <div class="mt-4">
-                    <a href="https://www.youtube.com/results?search_query={{ movie.title }} trailer" target="_blank" class="btn btn-danger btn-action">▶ Watch Trailer</a>
-                    
-                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn {% if in_watchlist %}btn-success{% else %}btn-outline-light{% endif %} btn-action">
-                        {% if in_watchlist %}✓ In Watchlist{% else %}+ Add to Watchlist{% endif %}
-                    </a>
-                    
-                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn {% if in_favorites %}btn-warning text-dark{% else %}btn-outline-warning{% endif %} btn-action">
-                        {% if in_favorites %}★ Favorited{% else %}☆ Add to Favorites{% endif %}
-                    </a>
-
-                    <div class="d-flex gap-2 mt-2">
-                        <a href="{% url 'toggle_vote' movie.tmdb_id 'LIKE' %}" class="btn btn-action {% if current_vote == 'LIKE' %}btn-danger{% else %}btn-outline-danger{% endif %}">
-                            👍 {{ likes_count }}
-                        </a>
-                        
-                        <a href="{% url 'toggle_vote' movie.tmdb_id 'DISLIKE' %}" class="btn btn-action {% if current_vote == 'DISLIKE' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
-                            👎 {{ dislikes_count }}
-                        </a>
-                    </div>
-                </div>
+            <div class="col-md-4 mb-4">
+                <img src="{{ poster }}" class="movie-poster-lg" alt="{{ movie.title }}">
             </div>
-
+            
             <div class="col-md-8">
-                <h1 class="display-4 fw-bold">{{ movie.title }}</h1>
-                <p class="lead text-secondary">{{ movie.genres }}</p>
-                <div class="glass-panel">
-                    <h4>Overview</h4>
-                    <p>{{ movie.overview }}</p>
-                    <hr class="border-secondary">
-                    <div class="row">
-                        <div class="col-md-6"><strong>Director:</strong> <span class="text-danger">{{ director }}</span></div>
-                        <div class="col-md-6"><strong>Starring:</strong> <span class="text-danger">{{ cast }}</span></div>
-                    </div>
+                <h1 class="display-4 fw-bold mb-2">{{ movie.title }}</h1>
+                <p class="text-muted mb-4">Directed by {{ director }}</p>
+                
+                <div class="d-flex align-items-center mb-4">
+                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Watchlist">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Favorites">
+                        <i class="fas fa-heart"></i>
+                    </a>
+                    <a href="{% url 'toggle_vote' movie.tmdb_id 'LIKE' %}" class="btn-icon {% if current_vote == 'LIKE' %}active-like{% endif %}" title="Like">
+                        <i class="fas fa-thumbs-up"></i>
+                    </a> <span class="me-3 text-muted">{{ likes_count }}</span>
+                    <a href="{% url 'toggle_vote' movie.tmdb_id 'DISLIKE' %}" class="btn-icon {% if current_vote == 'DISLIKE' %}active-dislike{% endif %}" title="Dislike">
+                        <i class="fas fa-thumbs-down"></i>
+                    </a> <span class="text-muted">{{ dislikes_count }}</span>
                 </div>
 
-                <div class="mt-5">
-                    <h3>User Reviews</h3>
-                    <div class="glass-panel mb-4">
-                        <h5>Write a Review</h5>
-                        <form method="POST">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label>Rating (1-10):</label>
-                                <input type="number" name="rating" min="1" max="10" step="0.1" class="form-control bg-dark text-white border-secondary" style="width: 100px;" required>
-                            </div>
-                            <div class="mb-3">
-                                <textarea name="review_text" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="What did you think?"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-danger">Submit Review</button>
-                        </form>
-                    </div>
-                    {% for review in reviews %}
-                    <div class="review-card">
-                        <div class="d-flex justify-content-between">
-                            <strong>{{ review.user.username }}</strong>
-                            <span class="text-warning">★ {{ review.rating }}/10</span>
-                        </div>
-                        <p class="mt-2 text-secondary">{{ review.text }}</p>
-                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted">No reviews yet. Be the first to review!</p>
-                    {% endfor %}
+                <div class="mb-4">
+                    <span class="meta-label">CAST:</span>
+                    <span class="cast-text">{{ cast }}</span>
                 </div>
+                
+                <hr class="border-secondary">
+                
+                <h4 class="mb-3">Leave a Review</h4>
+                <form method="POST" class="mb-5">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <select name="rating" class="form-select" required>
+                                <option value="5">★★★★★ (5)</option>
+                                <option value="4">★★★★☆ (4)</option>
+                                <option value="3">★★★☆☆ (3)</option>
+                                <option value="2">★★☆☆☆ (2)</option>
+                                <option value="1">★☆☆☆☆ (1)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" name="review_text" class="form-control" placeholder="Write your thoughts..." required autocomplete="off">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-danger w-100">Post</button>
+                        </div>
+                    </div>
+                </form>
+
+                {% for review in reviews %}
+                <div class="review-box">
+                    <div>
+                        <span class="review-user">{{ review.user.username }}</span>
+                        <span class="star-rating">
+                            {% if review.rating >= 1 %}★{% endif %}
+                            {% if review.rating >= 2 %}★{% endif %}
+                            {% if review.rating >= 3 %}★{% endif %}
+                            {% if review.rating >= 4 %}★{% endif %}
+                            {% if review.rating == 5 %}★{% endif %}
+                        </span>
+                        <span class="float-end review-date">{{ review.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <p class="mt-2 mb-0 text-white">{{ review.text }}</p>
+                </div>
+                {% empty %}
+                <p class="text-muted">No reviews yet. Be the first to review!</p>
+                {% endfor %}
             </div>
         </div>
+
+        {% if related_movies %}
+        <div class="mt-5 mb-5">
+            <h3 class="mb-3 border-start border-4 border-danger ps-3">You Might Also Like</h3>
+            <div class="row">
+                {% for movie in related_movies %}
+                <div class="col-6 col-md-3 col-lg-2 mb-4">
+                    <a href="{% url 'movie_detail' movie.id %}" class="card movie-card h-100">
+                        <img src="{{ movie.poster }}" class="card-img-top" alt="{{ movie.title }}">
+                        <div class="card-body">
+                            <h6 class="card-title text-center" style="font-size: 0.9rem;">{{ movie.title }}</h6>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <p class="text-center text-muted mt-4 small fst-italic opacity-75">
+                "We try to match the genre, but sometimes our AI gets adventurous."
+            </p>
+        </div>
+        {% endif %}
+
     </div>
-    <br><br>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
