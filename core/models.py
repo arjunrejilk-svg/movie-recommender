@@ -1,3 +1,7 @@
+from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_in
+from django.contrib.sessions.models import Session
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -64,3 +68,47 @@ class Vote(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.vote_type} - {self.movie.title}"
+
+# --- ADD THIS AT THE BOTTOM OF models.py ---
+
+# 1. Model to track the user's ONE active session
+
+
+class UserSession(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    session_key = models.CharField(max_length=40, null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+# 2. Signal: Run this every time ANYONE logs in
+
+
+@receiver(user_logged_in)
+def remove_other_sessions(sender, user, request, **kwargs):
+    # Save the current session key so we can compare later
+    if not request.session.session_key:
+        request.session.create()
+    new_session_key = request.session.session_key
+
+    # Check if this user has an old session stored in DB
+    try:
+        user_session = UserSession.objects.get(user=user)
+        old_session_key = user_session.session_key
+
+        # If an old session exists and it's different from the new one...
+        if old_session_key and old_session_key != new_session_key:
+            # DELETE the old session from Django's database (Kicks the other device)
+            try:
+                Session.objects.get(session_key=old_session_key).delete()
+            except Session.DoesNotExist:
+                pass  # It was already expired/deleted
+
+        # Update with the new key
+        user_session.session_key = new_session_key
+        user_session.save()
+
+    except UserSession.DoesNotExist:
+        # First time login for this user, create the record
+        UserSession.objects.create(user=user, session_key=new_session_key)
