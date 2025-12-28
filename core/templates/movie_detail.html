@@ -19,7 +19,10 @@
         .btn-icon.active-dislike { border-color: #dc3545; color: #dc3545; }
         
         .movie-poster-lg { border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); width: 100%; object-fit: cover; }
-        .cast-text { color: #aaa; font-size: 0.9rem; }
+        
+        /* Consistent Grey for Cast and Genre */
+        .cast-text, .genre-text { color: #aaa; font-size: 0.9rem; }
+        
         .meta-label { color: #777; font-weight: bold; font-size: 0.9rem; margin-right: 5px; }
         
         /* REVIEWS */
@@ -58,6 +61,10 @@
             </div>
             
             <div class="col-md-8">
+                {% if genres %}
+                <p class="genre-text mb-1 text-uppercase fw-bold" style="letter-spacing: 1px;">{{ genres }}</p>
+                {% endif %}
+
                 <h1 class="display-4 fw-bold mb-2">{{ movie.title }}</h1>
                 
                 <p class="mb-3" style="color: #cccccc; font-size: 1.1rem;">Directed by {{ director }}</p>
@@ -67,10 +74,10 @@
                 </p>
 
                 <div class="d-flex align-items-center mb-4 mt-4">
-                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Watchlist">
+                    <a href="{% url 'toggle_watchlist' movie.tmdb_id %}" class="btn-icon {% if in_watchlist %}active-watch{% endif %}" title="Add to Watchlist">
                         <i class="fas fa-plus"></i>
                     </a>
-                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Favorites">
+                    <a href="{% url 'toggle_favorite' movie.tmdb_id %}" class="btn-icon {% if in_favorites %}active-fav{% endif %}" title="Add to Favorites">
                         <i class="fas fa-heart"></i>
                     </a>
                     <a href="{% url 'toggle_vote' movie.tmdb_id 'LIKE' %}" class="btn-icon {% if current_vote == 'LIKE' %}active-like{% endif %}" title="Like">

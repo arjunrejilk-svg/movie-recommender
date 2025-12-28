@@ -421,16 +421,15 @@ def index(request):
         'user': request.user
     })
 
-# --- 7. MOVIE DETAIL PAGE (Fixed: Rating, Optional Text, Mixed Recommendations) ---
+# --- 7. MOVIE DETAIL PAGE (Updated: Passes 'genres' to template) ---
 
 
 @login_required
 def movie_detail(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
 
-    # Handle Review Submission (Fixed: Text is optional)
+    # Handle Review Submission
     if request.method == 'POST' and 'rating' in request.POST:
-        # Defaults to empty if nothing typed
         text_content = request.POST.get('review_text', '')
         Review.objects.create(
             user=request.user,
@@ -443,8 +442,10 @@ def movie_detail(request, movie_id):
     # Get basic data
     poster, director, cast = get_movie_data(movie)
 
-    # --- LOGIC: RELATED MOVIES (Genre-Based, Mixed Languages) ---
+    # --- LOGIC: EXTRACT GENRES & RELATED MOVIES ---
     related_movies = []
+    genre_str = ""  # New variable for the template
+
     try:
         if new_df is not None:
             movie_in_df = new_df[new_df['id'] == int(movie_id)]
@@ -457,7 +458,11 @@ def movie_detail(request, movie_id):
                 found_genres = [g for g in common_genres if g in current_tags]
 
                 if found_genres:
-                    # Filter: Match Genre (ANY Language allowed)
+                    # 1. Create the Genre String for display (e.g. "Action | Sci-Fi")
+                    genre_str = " | ".join([g.capitalize()
+                                           for g in found_genres])
+
+                    # 2. Filter: Match Genre for Related Movies
                     genre_regex = '|'.join(found_genres)
                     condition = new_df['tags'].str.contains(
                         genre_regex, case=False, na=False)
@@ -466,7 +471,7 @@ def movie_detail(request, movie_id):
                     related_df = new_df[condition & (
                         new_df['id'] != int(movie_id))]
 
-                    # Random Sample (Mixes Hollywood, Bollywood, etc.)
+                    # Random Sample
                     if not related_df.empty:
                         samples = related_df.sample(n=min(6, len(related_df)))
                         for _, row in samples.iterrows():
@@ -482,6 +487,7 @@ def movie_detail(request, movie_id):
         'poster': poster,
         'director': director,
         'cast': cast,
+        'genres': genre_str,  # <--- Passing the genres here
         'related_movies': related_movies,
         'in_watchlist': Watchlist.objects.filter(user=request.user, movie=movie).exists(),
         'in_favorites': Favorite.objects.filter(user=request.user, movie=movie).exists(),
