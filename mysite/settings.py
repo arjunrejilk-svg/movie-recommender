@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
+import os
 import dj_database_url
 import os  # Ensure this is also imported
 from pathlib import Path
@@ -28,8 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# Add this line to trust your Render URL
-CSRF_TRUSTED_ORIGINS = ['https://movie-ai-cqwl.onrender.com']
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -132,3 +132,15 @@ CSRF_TRUSTED_ORIGINS = [
 # This tells Django: "When someone logs in, send them to our traffic controller"
 LOGIN_REDIRECT_URL = 'login_dispatch'
 LOGIN_URL = 'login'
+# --- RENDER SECURITY SETTINGS ---
+
+# 1. Trust the Render URL (The ID Card)
+CSRF_TRUSTED_ORIGINS = ['https://movie-ai-cqwl.onrender.com']
+
+# 2. Trust the Middleman (The Missing Piece!)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 3. Security Tweaks
+SECURE_SSL_REDIRECT = False  # Render handles this
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
