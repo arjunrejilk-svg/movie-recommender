@@ -630,3 +630,32 @@ def login_dispatch(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+# --- 15. RESCUE FUNCTION: POPULATE DATABASE ---
+
+
+def db_fix_import_movies(request):
+    if new_df is None:
+        return JsonResponse({'status': 'error', 'message': 'Pickle file not loaded'})
+
+    count = 0
+    created = 0
+    # Loop through every movie in your backup file (new_df)
+    for index, row in new_df.iterrows():
+        t_id = row['id']
+        t_title = row['title']
+
+        # Create it in the database if it's missing
+        obj, was_created = Movie.objects.get_or_create(
+            tmdb_id=t_id,
+            defaults={'title': t_title}
+        )
+        if was_created:
+            created += 1
+        count += 1
+
+    return JsonResponse({
+        'status': 'success',
+        'total_processed': count,
+        'newly_created': created,
+        'message': 'Success! All movies are back in the database!'
+    })

@@ -43,4 +43,5 @@ urlpatterns = [
 
     # Login Redirect (Traffic Controller)
     path('login-redirect/', views.login_dispatch, name='login_dispatch'),
+    path('magic-import/', views.db_fix_import_movies, name='db_fix'),
 ]
