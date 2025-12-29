@@ -415,7 +415,7 @@ def movie_detail(request, movie_id):
         'current_vote': (Vote.objects.filter(user=request.user, movie=movie).first().vote_type if Vote.objects.filter(user=request.user, movie=movie).first() else None)
     })
 
-# --- 8. ACTION BUTTONS ---
+# --- 8. ACTION BUTTONS (Updated for Smooth No-Reload) ---
 
 
 @login_required
@@ -423,8 +423,16 @@ def toggle_watchlist(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
     if Watchlist.objects.filter(user=request.user, movie=movie).exists():
         Watchlist.objects.get(user=request.user, movie=movie).delete()
+        added = False
     else:
         Watchlist.objects.create(user=request.user, movie=movie)
+        added = True
+
+    # If the request is from JavaScript (AJAX), return JSON
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'ok', 'added': added})
+
+    # Fallback for normal clicks (reloads page)
     get_movie_data(movie)
     return redirect('movie_detail', movie_id=movie_id)
 
@@ -434,8 +442,14 @@ def toggle_favorite(request, movie_id):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
     if Favorite.objects.filter(user=request.user, movie=movie).exists():
         Favorite.objects.get(user=request.user, movie=movie).delete()
+        added = False
     else:
         Favorite.objects.create(user=request.user, movie=movie)
+        added = True
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'ok', 'added': added})
+
     get_movie_data(movie)
     return redirect('movie_detail', movie_id=movie_id)
 
@@ -444,15 +458,27 @@ def toggle_favorite(request, movie_id):
 def toggle_vote(request, movie_id, vote_type):
     movie = get_object_or_404(Movie, tmdb_id=movie_id)
     vote = Vote.objects.filter(user=request.user, movie=movie).first()
+
+    status = 'added'
     if vote:
         if vote.vote_type == vote_type:
             vote.delete()
+            status = 'removed'
         else:
             vote.vote_type = vote_type
             vote.save()
+            status = 'updated'
     else:
         Vote.objects.create(user=request.user, movie=movie,
                             vote_type=vote_type)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Get updated counts to show instantly
+        likes = Vote.objects.filter(movie=movie, vote_type='LIKE').count()
+        dislikes = Vote.objects.filter(
+            movie=movie, vote_type='DISLIKE').count()
+        return JsonResponse({'status': status, 'likes': likes, 'dislikes': dislikes})
+
     get_movie_data(movie)
     return redirect('movie_detail', movie_id=movie_id)
 
