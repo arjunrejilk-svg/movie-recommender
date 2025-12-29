@@ -58,35 +58,52 @@ def safe_fetch_poster(tmdb_id, title):
     except Exception:
         return f"https://ui-avatars.com/api/?name={quote(title)}&background=333&color=fff"
 
-# --- 3. HELPER: GET FULL MOVIE DATA ---
+# --- 3. HELPER: GET FULL MOVIE DATA (Updated to get Description) ---
 
 
 def get_movie_data(movie_obj):
-    if movie_obj.poster_url and movie_obj.director != "Unknown":
+    # 1. Check if we already have the data (Poster + Description)
+    # NOTE: We added 'and movie_obj.description' to this check!
+    if movie_obj.poster_url and movie_obj.director != "Unknown" and movie_obj.description:
         return movie_obj.poster_url, movie_obj.director, movie_obj.cast
+
     try:
+        # 2. Fetch Credits (Director & Cast)
         url_credits = f'https://api.themoviedb.org/3/movie/{movie_obj.tmdb_id}/credits?api_key={API_KEY}&language=en-US'
         data_cred = requests.get(url_credits, timeout=3).json()
+
         director = "Unknown"
         for crew in data_cred.get('crew', []):
             if crew['job'] == 'Director':
                 director = crew['name']
                 break
+
         cast_str = ", ".join([a['name']
                              for a in data_cred.get('cast', [])[:5]])
 
+        # 3. Fetch Movie Details (Poster & Description)
         url_movie = f'https://api.themoviedb.org/3/movie/{movie_obj.tmdb_id}?api_key={API_KEY}&language=en-US'
         data_mov = requests.get(url_movie, timeout=3).json()
+
         poster_path = data_mov.get('poster_path')
         final_poster = "https://image.tmdb.org/t/p/w500/" + \
             poster_path if poster_path else f"https://ui-avatars.com/api/?name={quote(movie_obj.title)}&background=333&color=fff"
 
+        # --- THE MISSING PART IS HERE ---
+        overview = data_mov.get('overview', 'No description available.')
+
+        # 4. Save Everything to Database
         movie_obj.poster_url = final_poster
         movie_obj.director = director
         movie_obj.cast = cast_str
+        movie_obj.description = overview  # <--- Saving the description now!
         movie_obj.save()
+
         return final_poster, director, cast_str
-    except Exception:
+
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        # Return fallback if API fails
         return f"https://ui-avatars.com/api/?name={quote(movie_obj.title)}&background=333&color=fff", "Unknown", "Unknown"
 
 # --- 4. AUTH VIEWS ---
