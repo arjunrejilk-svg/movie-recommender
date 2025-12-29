@@ -28,7 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-
+# Add this line to trust your Render URL
+CSRF_TRUSTED_ORIGINS = ['https://movie-ai-cqwl.onrender.com']
 # Application definition
 
 INSTALLED_APPS = [
