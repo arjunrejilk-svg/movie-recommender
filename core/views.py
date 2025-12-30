@@ -38,24 +38,40 @@ def load_data():
 
 new_df, similarity = load_data()
 
-# --- 2. HELPER: SAFE POSTER FETCH ---
+# --- 2. HELPER: SAFE POSTER FETCH (Updated to SAVE data) ---
 
 
 def safe_fetch_poster(tmdb_id, title):
     try:
+        # 1. Check Database first
         db_movie = Movie.objects.filter(tmdb_id=tmdb_id).first()
         if db_movie and db_movie.poster_url:
             return db_movie.poster_url
+
+        # 2. If not found, fetch from API
         response = requests.get(
             f'https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={API_KEY}',
             timeout=2
         )
+
         if response.status_code == 200:
-            path = response.json().get('poster_path')
+            data = response.json()
+            path = data.get('poster_path')
+
             if path:
-                return "https://image.tmdb.org/t/p/w500/" + path
+                final_poster = "https://image.tmdb.org/t/p/w500/" + path
+
+                # --- THE FIX: SAVE IT TO DATABASE ---
+                if db_movie:
+                    db_movie.poster_url = final_poster
+                    db_movie.save()  # <--- Crucial Step!
+
+                return final_poster
+
         raise ValueError("No poster")
+
     except Exception:
+        # Fallback image
         return f"https://ui-avatars.com/api/?name={quote(title)}&background=333&color=fff"
 
 # --- 3. HELPER: GET FULL MOVIE DATA (Updated to get Description) ---
