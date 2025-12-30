@@ -79,7 +79,12 @@ def safe_fetch_poster(tmdb_id, title):
 
 def get_movie_data(movie_obj):
     # 1. Check if we already have the data (Poster + Description)
-    if movie_obj.poster_url and movie_obj.director != "Unknown" and movie_obj.description:
+    # --- UPDATED LOGIC: We now check if description is NOT the dummy text ---
+    if (movie_obj.poster_url and
+        movie_obj.director != "Unknown" and
+        movie_obj.description and
+            movie_obj.description != "No description available"):
+
         return movie_obj.poster_url, movie_obj.director, movie_obj.cast
 
     try:

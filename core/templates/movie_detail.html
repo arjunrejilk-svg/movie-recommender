@@ -100,7 +100,7 @@
                 <p class="mb-3" style="color: #cccccc; font-size: 1.1rem;">Directed by {{ director }}</p>
                 
                 <p class="lead" style="font-size: 1.1rem; line-height: 1.6; color: #ddd;">
-                    {{ movie.overview|default:"No description available." }}
+                    {{ movie.description|default:"No description available." }}
                 </p>
 
                 <div class="d-flex align-items-center mb-4 mt-4">
