@@ -17,6 +17,8 @@ class Movie(models.Model):
     poster_url = models.CharField(max_length=500, blank=True, null=True)
     director = models.CharField(max_length=200, default="Unknown")
     cast = models.CharField(max_length=500, default="Unknown")
+    # --- ADD THIS LINE ---
+    description = models.TextField(default="No description available")
 
     def __str__(self):
         return self.title
