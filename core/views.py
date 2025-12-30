@@ -79,7 +79,6 @@ def safe_fetch_poster(tmdb_id, title):
 
 def get_movie_data(movie_obj):
     # 1. Check if we already have the data (Poster + Description)
-    # NOTE: We added 'and movie_obj.description' to this check!
     if movie_obj.poster_url and movie_obj.director != "Unknown" and movie_obj.description:
         return movie_obj.poster_url, movie_obj.director, movie_obj.cast
 
@@ -173,7 +172,7 @@ def search_suggestions(request):
         return JsonResponse({'results': [{'title': m.title, 'id': m.tmdb_id} for m in movies]})
     return JsonResponse({'results': []})
 
-# --- 6. UPGRADED INTELLIGENT HOME PAGE ---
+# --- 6. UPGRADED INTELLIGENT HOME PAGE (WITH SPEED FIX) ---
 
 
 @login_required(login_url='/login/')
@@ -361,6 +360,7 @@ def index(request):
                         {'title': row['title'], 'poster': poster, 'id': row['id']})
 
     else:
+        # --- OPTIMIZED TRENDING SECTION (SPEED FIX) ---
         if new_df is not None:
             frames = []
             langs_to_mix = ['en', 'hi', 'ml', 'ta', 'te']
@@ -375,10 +375,29 @@ def index(request):
                     frames).drop_duplicates().sample(frac=1).head(18)
             else:
                 mixed_df = new_df.sample(n=18)
+
+            # 2. BULK FETCH (The Speed Fix) 🚀
+            # Instead of asking 1-by-1, we get all IDs at once
+            tmdb_ids = mixed_df['id'].tolist()
+
+            # Get all existing posters from Database in ONE query
+            stored_movies = Movie.objects.filter(
+                tmdb_id__in=tmdb_ids).values('tmdb_id', 'poster_url')
+            poster_map = {m['tmdb_id']: m['poster_url']
+                          for m in stored_movies if m['poster_url']}
+
+            # 3. Match them up
             for _, row in mixed_df.iterrows():
-                poster = safe_fetch_poster(int(row['id']), row['title'])
+                t_id = int(row['id'])
+
+                # Use cached poster if we have it, otherwise fetch safely
+                if t_id in poster_map:
+                    poster = poster_map[t_id]
+                else:
+                    poster = safe_fetch_poster(t_id, row['title'])
+
                 trending_movies.append(
-                    {'title': row['title'], 'poster': poster, 'id': row['id']})
+                    {'title': row['title'], 'poster': poster, 'id': t_id})
 
     return render(request, 'index.html', {
         'all_movies': movie_list,
@@ -461,11 +480,9 @@ def toggle_watchlist(request, movie_id):
         Watchlist.objects.create(user=request.user, movie=movie)
         added = True
 
-    # If the request is from JavaScript (AJAX), return JSON
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'status': 'ok', 'added': added})
 
-    # Fallback for normal clicks (reloads page)
     get_movie_data(movie)
     return redirect('movie_detail', movie_id=movie_id)
 
@@ -506,7 +523,6 @@ def toggle_vote(request, movie_id, vote_type):
                             vote_type=vote_type)
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        # Get updated counts to show instantly
         likes = Vote.objects.filter(movie=movie, vote_type='LIKE').count()
         dislikes = Vote.objects.filter(
             movie=movie, vote_type='DISLIKE').count()
@@ -663,6 +679,7 @@ def login_dispatch(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
 # --- 15. RESCUE FUNCTION: POPULATE DATABASE ---
 
 
