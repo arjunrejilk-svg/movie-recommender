@@ -51,7 +51,7 @@ def safe_fetch_poster(tmdb_id, title):
         # 2. If not found, fetch from API
         response = requests.get(
             f'https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={API_KEY}',
-            timeout=2
+            timeout=10
         )
 
         if response.status_code == 200:
@@ -90,7 +90,7 @@ def get_movie_data(movie_obj):
     try:
         # 2. Fetch Credits (Director & Cast)
         url_credits = f'https://api.themoviedb.org/3/movie/{movie_obj.tmdb_id}/credits?api_key={API_KEY}&language=en-US'
-        data_cred = requests.get(url_credits, timeout=3).json()
+        data_cred = requests.get(url_credits, timeout=10).json()
 
         director = "Unknown"
         for crew in data_cred.get('crew', []):
@@ -103,7 +103,7 @@ def get_movie_data(movie_obj):
 
         # 3. Fetch Movie Details (Poster & Description)
         url_movie = f'https://api.themoviedb.org/3/movie/{movie_obj.tmdb_id}?api_key={API_KEY}&language=en-US'
-        data_mov = requests.get(url_movie, timeout=3).json()
+        data_mov = requests.get(url_movie, timeout=10).json()
 
         poster_path = data_mov.get('poster_path')
         final_poster = "https://image.tmdb.org/t/p/w500/" + \
